@@ -1,0 +1,222 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Grantsy Configuration",
+  "type": "object",
+  "required": ["server", "database", "entitlements", "auth"],
+  "properties": {
+    "env": {
+      "type": "string",
+      "enum": ["dev", "prod"],
+      "default": "prod",
+      "description": "Environment: dev (colored console logs) or prod (JSON logs)"
+    },
+    "server": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "host": {
+          "type": "string",
+          "default": "0.0.0.0",
+          "description": "Server host address"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8080,
+          "description": "Server port"
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "required": ["driver", "dsn"],
+      "properties": {
+        "driver": {
+          "type": "string",
+          "enum": ["sqlite", "postgres"],
+          "description": "Database driver"
+        },
+        "dsn": {
+          "type": "string",
+          "description": "Database connection string"
+        }
+      }
+    },
+    "entitlements": {
+      "type": "object",
+      "required": ["plans", "features"],
+      "properties": {
+        "default_plan": {
+          "type": "string",
+          "description": "Optional plan ID for users without subscription. If not set, users without subscription have no plan and no features."
+        },
+        "plans": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "features"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique plan identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name"
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "List of feature IDs included in this plan"
+              }
+            }
+          }
+        },
+        "features": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique feature identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Feature description"
+              }
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "required": ["api_key"],
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "description": "API key for authentication (X-Api-Key header)"
+        }
+      }
+    },
+    "sync_period": {
+      "type": "string",
+      "description": "Optional periodic sync interval in Go duration format (e.g. '15m', '1h30m'). If empty, data is only loaded at startup.",
+      "default": ""
+    },
+    "providers": {
+      "type": "object",
+      "description": "Payment provider configurations",
+      "properties": {
+        "lemonsqueezy": {
+          "type": "object",
+          "required": ["api_key"],
+          "properties": {
+            "api_key": {
+              "type": "string",
+              "description": "LemonSqueezy API key for fetching product/variant data"
+            },
+            "products": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["product_id", "plan_id"],
+                "properties": {
+                  "product_id": {
+                    "type": "integer",
+                    "description": "LemonSqueezy product ID"
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "description": "Plan ID to assign for this product"
+                  }
+                }
+              }
+            },
+            "webhook": {
+              "type": "object",
+              "properties": {
+                "secret": {
+                  "type": "string",
+                  "description": "Webhook signing secret for incoming LemonSqueezy webhooks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "webhooks": {
+      "type": "object",
+      "description": "Outgoing webhooks to notify external services",
+      "properties": {
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url", "secret"],
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Webhook endpoint URL"
+              },
+              "secret": {
+                "type": "string",
+                "description": "Secret for signing outgoing webhook payloads"
+              }
+            }
+          }
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info",
+          "description": "Log level"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["json", "text"],
+          "default": "json",
+          "description": "Log format"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Prometheus metrics"
+        },
+        "go_metrics": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include Go runtime metrics"
+        },
+        "path": {
+          "type": "string",
+          "default": "/metrics",
+          "description": "Metrics endpoint path"
+        }
+      }
+    }
+  }
+}

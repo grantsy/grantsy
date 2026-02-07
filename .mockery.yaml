@@ -1,0 +1,16 @@
+with-expecter: true
+dir: "{{.InterfaceDir}}/mocks"
+outpkg: mocks
+packages:
+  github.com/grantsy/grantsy/internal/entitlements:
+    interfaces:
+      SubscriptionLoader:
+      PricingProvider:
+      PlanUpdateNotifier:
+  github.com/grantsy/grantsy/internal/subscriptions:
+    interfaces:
+      SubscriptionObserver:
+      PlanProvider:
+      SubscriptionReader:
+      SubscriptionWriter:
+      WebhookVerifier:
