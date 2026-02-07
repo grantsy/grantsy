@@ -1,0 +1,59 @@
+version: '3'
+
+tasks:
+  dev:
+    desc: Run with hot reload
+    cmds:
+      - air
+
+  run:
+    desc: Run without hot reload
+    cmds:
+      - go run ./cmd/grantsy
+
+  generate-openapi:
+    desc: Generate OpenAPI spec to openapi.json
+    cmds:
+      - go run ./cmd/openapi-gen
+
+  build:
+    desc: Build binary
+    deps: [generate-openapi]
+    cmds:
+      - go build -o bin/grantsy ./cmd/grantsy
+
+  generate-mocks:
+    desc: Generate mocks with mockery
+    cmds:
+      - mockery
+
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test-unit
+
+  test-unit:
+    desc: Unit tests only
+    deps: [generate-mocks]
+    cmds:
+      - go test -coverprofile=coverage.out -covermode=atomic ./internal/entitlements/... ./internal/subscriptions/... ./internal/auth/... ./internal/httptools/...
+
+  test-coverage:
+    desc: View coverage report
+    cmds:
+      - go tool cover -func=coverage.out
+
+  lint:
+    desc: Run linter
+    cmds:
+      - go vet ./...
+
+  docker:
+    desc: Build Docker image
+    cmds:
+      - docker build -t grantsy .
+
+  docker-run:
+    desc: Run Docker container
+    cmds:
+      - docker run --rm -p 8080:8080 grantsy

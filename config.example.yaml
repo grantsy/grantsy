@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=config.schema.json
+env: prod  # dev or prod
+
+server:
+  host: 0.0.0.0
+  port: 8080
+
+database:
+  driver: sqlite
+  dsn: /var/lib/grantsy/grantsy.db
+
+entitlements:
+  # default_plan is optional. If set, users without subscription get this plan.
+  # If not set, users without subscription have no plan and no features.
+  default_plan: "free"
+
+  plans:
+    - id: free
+      name: Free
+      features: [dashboard]
+    - id: pro
+      name: Pro
+      features: [dashboard, api, sso]
+    - id: enterprise
+      name: Enterprise
+      features: [dashboard, api, sso, audit, custom_branding]
+
+  features:
+    - id: dashboard
+      name: Dashboard
+      description: Basic dashboard access
+    - id: api
+      name: API Access
+      description: REST API access
+    - id: sso
+      name: Single Sign-On
+      description: SAML/OIDC integration
+    - id: audit
+      name: Audit Logs
+      description: Activity audit trail
+    - id: custom_branding
+      name: Custom Branding
+      description: White-label customization
+
+auth:
+  api_key: "${API_KEY}"
+
+providers:
+  lemonsqueezy:
+    products:
+      - product_id: 12345
+        plan_id: pro
+      - product_id: 67890
+        plan_id: enterprise
+    webhook:
+      secret: "${LEMONSQUEEZY_WEBHOOK_SECRET}"
+
+# Outgoing webhooks (optional) - notify external services of subscription changes
+webhooks:
+  endpoints:
+    - url: "https://your-app.com/webhooks/grantsy"
+      secret: "${OUTGOING_WEBHOOK_SECRET}"
+
+log:
+  level: info
+  format: json
+
+metrics:
+  enable: true
+  go_metrics: false
+  path: /metrics

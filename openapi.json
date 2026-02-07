@@ -1,0 +1,576 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Grantsy Entitlements API",
+    "description": "Microservice for managing SaaS feature entitlements",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/check": {
+      "get": {
+        "tags": [
+          "Entitlements"
+        ],
+        "summary": "Check feature access",
+        "description": "Check if a user has access to a specific feature based on their subscription plan",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "User ID to check access for",
+            "schema": {
+              "type": "string",
+              "description": "User ID to check access for"
+            }
+          },
+          {
+            "name": "feature",
+            "in": "query",
+            "description": "Feature ID to check access for",
+            "schema": {
+              "type": "string",
+              "description": "Feature ID to check access for"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature access check result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "CheckResultResponse",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CheckResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/features": {
+      "get": {
+        "tags": [
+          "Entitlements"
+        ],
+        "summary": "List user features",
+        "description": "Get all features available to a user based on their subscription plan",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "User ID to get features for",
+            "schema": {
+              "type": "string",
+              "description": "User ID to get features for"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User features list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "FeaturesDataResponse",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FeaturesResponse"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/plans": {
+      "get": {
+        "tags": [
+          "Plans"
+        ],
+        "summary": "List all plans",
+        "description": "Get all available subscription plans. Use ?expand=features to include feature details",
+        "parameters": [
+          {
+            "name": "expand",
+            "in": "query",
+            "description": "Set to 'features' to include feature details",
+            "schema": {
+              "type": "string",
+              "description": "Set to 'features' to include feature details"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of available plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "PlansDataResponse",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PlansResponse"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/subscription": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Get user subscription",
+        "description": "Get subscription details for a user including their plan, status, and available features",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "User ID to get subscription for",
+            "schema": {
+              "type": "string",
+              "description": "User ID to get subscription for"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User subscription details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "SubscriptionDataResponse",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionResponse"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CheckResult": {
+        "type": "object",
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "feature": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ProblemDetails"
+          }
+        }
+      },
+      "FeatureDTO": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Feature description"
+          },
+          "id": {
+            "type": "string",
+            "description": "Feature identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Feature display name"
+          }
+        }
+      },
+      "FeaturesResponse": {
+        "type": "object",
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of feature IDs available to the user",
+            "nullable": true
+          },
+          "plan": {
+            "type": "string",
+            "description": "The user's current plan ID"
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user ID"
+          }
+        }
+      },
+      "FieldError": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "PlanDTO": {
+        "type": "object",
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of feature IDs included in this plan",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "description": "Plan identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Plan display name"
+          }
+        }
+      },
+      "PlansResponse": {
+        "type": "object",
+        "properties": {
+          "all_features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureDTO"
+            },
+            "description": "All feature definitions (when expand=features)"
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanDTO"
+            },
+            "description": "List of available plans",
+            "nullable": true
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "SubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "description": "Whether the subscription has been cancelled"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of feature IDs available to the user",
+            "nullable": true
+          },
+          "has_subscription": {
+            "type": "boolean",
+            "description": "Whether the user has an active subscription"
+          },
+          "plan": {
+            "type": "string",
+            "description": "The user's current plan ID"
+          },
+          "renews_at": {
+            "type": "integer",
+            "description": "Unix timestamp when subscription renews",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Subscription status (active, on_trial, paused, past_due, cancelled, expired)"
+          },
+          "trial_ends_at": {
+            "type": "integer",
+            "description": "Unix timestamp when trial ends (if on trial)",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user ID"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "name": "X-Api-Key",
+        "in": "header",
+        "description": "API key for authentication"
+      }
+    }
+  }
+}
