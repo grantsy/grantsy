@@ -87,7 +87,7 @@ GET /v1/features?user_id={uid}
 → { user_id, plan, features[] }
 
 GET /v1/subscription?user_id={uid}
-→ { user_id, plan, status, features[], has_subscription, trial_ends_at, renews_at, cancelled }
+→ { user_id, plan, status, features[], has_subscription, trial_ends_at, renews_at, cancelled, raw }
 
 GET /v1/plans?expand=features
 → { plans[]{id, name, features[], variants[]?}, all_features[] }

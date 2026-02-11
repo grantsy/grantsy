@@ -71,6 +71,16 @@ func TestRouteSubscription_WithActiveSubscription(t *testing.T) {
 	assert.ElementsMatch(t, []any{"dashboard", "api", "sso"}, data["features"])
 	assert.Equal(t, float64(trialEnds), data["trial_ends_at"])
 	assert.Equal(t, float64(renewsAt), data["renews_at"])
+
+	raw := data["raw"].(map[string]any)
+	assert.Equal(t, "lemonsqueezy", raw["provider"])
+	rawData := raw["data"].(map[string]any)
+	assert.Equal(t, float64(42), rawData["id"])
+	assert.Equal(t, float64(300), rawData["product_id"])
+	assert.Equal(t, "active", rawData["status"])
+	assert.Equal(t, float64(trialEnds), rawData["trial_ends_at"])
+	assert.Equal(t, float64(renewsAt), rawData["renews_at"])
+	assert.Equal(t, false, rawData["cancelled"])
 }
 
 func TestRouteSubscription_NoSubscription(t *testing.T) {
@@ -96,6 +106,7 @@ func TestRouteSubscription_NoSubscription(t *testing.T) {
 	assert.Equal(t, false, data["has_subscription"])
 	assert.Equal(t, "free", data["plan"])
 	assert.Equal(t, "active", data["status"]) // default status when no subscription
+	assert.Nil(t, data["raw"])
 }
 
 func TestRouteSubscription_RepoError(t *testing.T) {
@@ -158,4 +169,10 @@ func TestRouteSubscription_CancelledSubscription(t *testing.T) {
 	assert.Equal(t, true, data["cancelled"])
 	assert.Equal(t, "cancelled", data["status"])
 	assert.Equal(t, true, data["has_subscription"])
+
+	raw := data["raw"].(map[string]any)
+	assert.Equal(t, "lemonsqueezy", raw["provider"])
+	rawData := raw["data"].(map[string]any)
+	assert.Equal(t, true, rawData["cancelled"])
+	assert.Equal(t, "cancelled", rawData["status"])
 }

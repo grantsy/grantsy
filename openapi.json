@@ -439,6 +439,92 @@
           }
         }
       },
+      "LemonSqueezySubscriptionDTO": {
+        "type": "object",
+        "properties": {
+          "billing_anchor": {
+            "type": "integer",
+            "description": "Day of month for billing"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "description": "Whether the subscription has been cancelled"
+          },
+          "card_brand": {
+            "type": "string",
+            "description": "Payment card brand"
+          },
+          "card_last_four": {
+            "type": "string",
+            "description": "Last four digits of payment card"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp when subscription was created",
+            "format": "int64"
+          },
+          "customer_id": {
+            "type": "integer",
+            "description": "LemonSqueezy customer ID"
+          },
+          "ends_at": {
+            "type": "integer",
+            "description": "Unix timestamp when subscription ends",
+            "nullable": true
+          },
+          "id": {
+            "type": "integer",
+            "description": "LemonSqueezy subscription ID"
+          },
+          "order_id": {
+            "type": "integer",
+            "description": "LemonSqueezy order ID"
+          },
+          "product_id": {
+            "type": "integer",
+            "description": "LemonSqueezy product ID"
+          },
+          "product_name": {
+            "type": "string",
+            "description": "Product display name"
+          },
+          "renews_at": {
+            "type": "integer",
+            "description": "Unix timestamp when subscription renews",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "description": "Subscription status"
+          },
+          "status_formatted": {
+            "type": "string",
+            "description": "Human-readable subscription status"
+          },
+          "subscription_item_id": {
+            "type": "integer",
+            "description": "LemonSqueezy subscription item ID"
+          },
+          "trial_ends_at": {
+            "type": "integer",
+            "description": "Unix timestamp when trial ends",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp when subscription was last updated",
+            "format": "int64"
+          },
+          "variant_id": {
+            "type": "integer",
+            "description": "LemonSqueezy variant ID"
+          },
+          "variant_name": {
+            "type": "string",
+            "description": "Variant display name"
+          }
+        }
+      },
       "Meta": {
         "type": "object",
         "properties": {
@@ -533,6 +619,29 @@
           }
         }
       },
+      "ProviderSubscription": {
+        "type": "object",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LemonSqueezySubscriptionDTO"
+          }
+        ]
+      },
+      "RawSubscription": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProviderSubscription"
+          },
+          "provider": {
+            "enum": [
+              "lemonsqueezy"
+            ],
+            "type": "string",
+            "description": "Provider identifier"
+          }
+        }
+      },
       "SubscriptionResponse": {
         "type": "object",
         "properties": {
@@ -555,6 +664,9 @@
           "plan": {
             "type": "string",
             "description": "The user's current plan ID"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/RawSubscription"
           },
           "renews_at": {
             "type": "integer",
