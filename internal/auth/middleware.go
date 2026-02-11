@@ -17,7 +17,7 @@ func Middleware(apiKey string) httptools.Middleware {
 			provided := r.Header.Get(headerName)
 			if provided == "" {
 				httptools.Error(w, r, http.StatusUnauthorized,
-					"https://grantsy.example/errors/unauthorized",
+					httptools.ErrTypeUnauthorized,
 					"Unauthorized",
 					"Missing API key",
 				)
@@ -26,7 +26,7 @@ func Middleware(apiKey string) httptools.Middleware {
 
 			if subtle.ConstantTimeCompare([]byte(provided), keyBytes) != 1 {
 				httptools.Error(w, r, http.StatusUnauthorized,
-					"https://grantsy.example/errors/unauthorized",
+					httptools.ErrTypeUnauthorized,
 					"Unauthorized",
 					"Invalid API key",
 				)

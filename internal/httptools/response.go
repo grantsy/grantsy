@@ -10,6 +10,13 @@ import (
 
 const Version = "1.0"
 
+const (
+	ErrTypeValidationFailed = "https://grantsy.example/errors/validation-failed"
+	ErrTypeBadRequest       = "https://grantsy.example/errors/bad-request"
+	ErrTypeUnauthorized     = "https://grantsy.example/errors/unauthorized"
+	ErrTypeInternalError    = "https://grantsy.example/errors/internal-error"
+)
+
 type Response struct {
 	Data any   `json:"data,omitempty"`
 	Meta *Meta `json:"meta"`
@@ -26,7 +33,7 @@ type ErrorResponse struct {
 }
 
 type ProblemDetails struct {
-	Type      string       `json:"type"`
+	Type      string       `json:"type" enum:"https://grantsy.example/errors/validation-failed,https://grantsy.example/errors/bad-request,https://grantsy.example/errors/unauthorized,https://grantsy.example/errors/internal-error"`
 	Title     string       `json:"title"`
 	Detail    string       `json:"detail"`
 	Status    int          `json:"status"`
@@ -82,7 +89,7 @@ func ValidationError(
 ) {
 	resp := ErrorResponse{
 		Error: ProblemDetails{
-			Type:      "https://grantsy.example/errors/validation-failed",
+			Type:      ErrTypeValidationFailed,
 			Title:     "Validation Failed",
 			Detail:    "One or more fields failed validation",
 			Status:    http.StatusUnprocessableEntity,
@@ -98,7 +105,7 @@ func ValidationError(
 
 func InternalError(w http.ResponseWriter, r *http.Request) {
 	Error(w, r, http.StatusInternalServerError,
-		"https://grantsy.example/errors/internal-error",
+		ErrTypeInternalError,
 		"Internal Server Error",
 		"An unexpected error occurred",
 	)
@@ -106,7 +113,7 @@ func InternalError(w http.ResponseWriter, r *http.Request) {
 
 func BadRequest(w http.ResponseWriter, r *http.Request, detail string) {
 	Error(w, r, http.StatusBadRequest,
-		"https://grantsy.example/errors/bad-request",
+		ErrTypeBadRequest,
 		"Bad Request",
 		detail,
 	)

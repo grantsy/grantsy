@@ -471,6 +471,13 @@
           "name": {
             "type": "string",
             "description": "Plan display name"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantDTO"
+            },
+            "description": "Pricing variants for this plan"
           }
         }
       },
@@ -516,6 +523,12 @@
             "type": "string"
           },
           "type": {
+            "enum": [
+              "https://grantsy.example/errors/validation-failed",
+              "https://grantsy.example/errors/bad-request",
+              "https://grantsy.example/errors/unauthorized",
+              "https://grantsy.example/errors/internal-error"
+            ],
             "type": "string"
           }
         }
@@ -560,6 +573,46 @@
           "user_id": {
             "type": "string",
             "description": "The user ID"
+          }
+        }
+      },
+      "VariantDTO": {
+        "type": "object",
+        "properties": {
+          "has_free_trial": {
+            "type": "boolean",
+            "description": "Whether this variant has a free trial"
+          },
+          "id": {
+            "type": "integer",
+            "description": "Variant identifier"
+          },
+          "interval": {
+            "type": "string",
+            "description": "Billing interval (month, year, etc.)"
+          },
+          "interval_count": {
+            "type": "integer",
+            "description": "Number of intervals between billings"
+          },
+          "name": {
+            "type": "string",
+            "description": "Variant display name"
+          },
+          "price": {
+            "description": "Price in cents"
+          },
+          "sort": {
+            "type": "integer",
+            "description": "Display order"
+          },
+          "trial_interval": {
+            "type": "string",
+            "description": "Trial billing interval"
+          },
+          "trial_interval_count": {
+            "type": "integer",
+            "description": "Trial duration in intervals"
           }
         }
       }
