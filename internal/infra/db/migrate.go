@@ -9,7 +9,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
@@ -20,7 +20,7 @@ func Migrate(driver, dsn string) error {
 	var dbURL string
 	switch driver {
 	case "sqlite":
-		dbURL = "sqlite3://" + dsn
+		dbURL = "sqlite://" + dsn
 	case "postgres":
 		dbURL = "pgx5" + strings.TrimPrefix(dsn, "postgres")
 	default:

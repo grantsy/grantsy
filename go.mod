@@ -13,7 +13,6 @@ require (
 	github.com/iamolegga/lemonsqueezy-go v0.0.0-20260208170847-671194e9e163
 	github.com/iamolegga/valmid v0.1.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/phsym/console-slog v0.3.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/standard-webhooks/standard-webhooks/libraries v0.0.0-20260204153508-82e3cc7ca7f2
@@ -24,6 +23,7 @@ require (
 	github.com/zenazn/goji v1.0.1
 	gopkg.in/yaml.v3 v3.0.1
 	maragu.dev/goqite v0.3.2-0.20251120080437-471f9d49ce35
+	modernc.org/sqlite v1.45.0
 )
 
 require (
@@ -45,6 +45,7 @@ require (
 	github.com/docker/docker v28.5.1+incompatible // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
@@ -75,6 +76,7 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -83,6 +85,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/shirou/gopsutil/v4 v4.25.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
@@ -102,6 +105,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
@@ -109,4 +113,7 @@ require (
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	modernc.org/libc v1.67.6 // indirect
+	modernc.org/mathutil v1.7.1 // indirect
+	modernc.org/memory v1.11.0 // indirect
 )
