@@ -146,7 +146,7 @@ Optional outgoing webhooks to notify external services of subscription changes.
 | **Type** | `string` |
 | **Default** | `""` (disabled) |
 
-Periodic sync interval for refreshing subscription data from the provider (e.g. `15m`, `1h30m`). Leave empty to disable.
+Periodic sync interval for refreshing pricing and variant data from the provider (e.g. `15m`, `1h30m`). Leave empty to disable.
 
 ### `log`
 

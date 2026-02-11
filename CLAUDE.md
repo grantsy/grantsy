@@ -138,7 +138,7 @@ entitlements:
 auth:
   api_key: ${API_KEY}        # Required
 
-sync_period: ""              # Optional periodic sync (e.g. "15m", "1h30m")
+sync_period: ""              # Optional periodic pricing/variant data refresh (e.g. "15m", "1h30m")
 
 providers:
   lemonsqueezy:
@@ -231,7 +231,7 @@ github.com/iamolegga/valmid
 github.com/iamolegga/lemonsqueezy-go
 github.com/golang-migrate/migrate/v4
 github.com/prometheus/client_golang
-github.com/mattn/go-sqlite3
+modernc.org/sqlite
 github.com/jackc/pgx/v5
 gopkg.in/yaml.v3
 github.com/go-playground/validator/v10
@@ -276,7 +276,7 @@ task docker-run       # Run in Docker
 - API key authentication via `X-Api-Key` header (required)
 - Plans/features defined in YAML config (version controlled)
 - Pricing/variants fetched from LemonSqueezy API at startup, cached in memory
-- `sync_period` config controls periodic refresh (provider-independent, shared by future providers)
+- `sync_period` config controls periodic pricing/variant data refresh from providers
 - All LemonSqueezy SDK usage consolidated in `subscriptions.LemonSqueezyProvider`
 - DB stores only subscriptions
 - Free tier: users without subscription get `default_plan`
