@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type DB struct {
@@ -19,7 +19,7 @@ func New(driver, dsn string) (*DB, error) {
 
 	switch driver {
 	case "sqlite":
-		db, err = sql.Open("sqlite3", dsn)
+		db, err = sql.Open("sqlite", dsn)
 	case "postgres":
 		db, err = sql.Open("pgx", dsn)
 	default:
