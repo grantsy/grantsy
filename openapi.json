@@ -649,6 +649,11 @@
             "type": "boolean",
             "description": "Whether the subscription has been cancelled"
           },
+          "ends_at": {
+            "type": "integer",
+            "description": "Unix timestamp when subscription ends (if cancelled)",
+            "nullable": true
+          },
           "features": {
             "type": "array",
             "items": {

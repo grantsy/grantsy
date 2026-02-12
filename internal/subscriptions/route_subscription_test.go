@@ -81,6 +81,7 @@ func TestRouteSubscription_WithActiveSubscription(t *testing.T) {
 	assert.Equal(t, float64(trialEnds), rawData["trial_ends_at"])
 	assert.Equal(t, float64(renewsAt), rawData["renews_at"])
 	assert.Equal(t, false, rawData["cancelled"])
+	assert.Nil(t, data["ends_at"])
 }
 
 func TestRouteSubscription_NoSubscription(t *testing.T) {
@@ -139,6 +140,7 @@ func TestRouteSubscription_MissingUserID(t *testing.T) {
 
 func TestRouteSubscription_CancelledSubscription(t *testing.T) {
 	renewsAt := int64(1721001600)
+	endsAt := int64(4102444800) // far future
 
 	reader := mocks.NewMockSubscriptionReader(t)
 	reader.EXPECT().GetSubscriptionByUserID(mock.Anything, "user-cancel").Return(&subscriptions.Subscription{
@@ -147,6 +149,7 @@ func TestRouteSubscription_CancelledSubscription(t *testing.T) {
 		ProductID: 300,
 		Status:    "cancelled",
 		RenewsAt:  renewsAt,
+		EndsAt:    &endsAt,
 		Cancelled: true,
 	}, nil)
 
@@ -169,10 +172,51 @@ func TestRouteSubscription_CancelledSubscription(t *testing.T) {
 	assert.Equal(t, true, data["cancelled"])
 	assert.Equal(t, "cancelled", data["status"])
 	assert.Equal(t, true, data["has_subscription"])
+	assert.Equal(t, float64(endsAt), data["ends_at"])
 
 	raw := data["raw"].(map[string]any)
 	assert.Equal(t, "lemonsqueezy", raw["provider"])
 	rawData := raw["data"].(map[string]any)
 	assert.Equal(t, true, rawData["cancelled"])
 	assert.Equal(t, "cancelled", rawData["status"])
+	assert.Equal(t, float64(endsAt), rawData["ends_at"])
+}
+
+func TestRouteSubscription_CancelledExpiredSubscription(t *testing.T) {
+	renewsAt := int64(1721001600)
+	endsAt := int64(1000000000) // past
+
+	reader := mocks.NewMockSubscriptionReader(t)
+	reader.EXPECT().GetSubscriptionByUserID(mock.Anything, "user-expired").Return(&subscriptions.Subscription{
+		ID:        43,
+		UserID:    "user-expired",
+		ProductID: 300,
+		Status:    "cancelled",
+		RenewsAt:  renewsAt,
+		EndsAt:    &endsAt,
+		Cancelled: true,
+	}, nil)
+
+	planProvider := mocks.NewMockPlanProvider(t)
+	planProvider.EXPECT().GetUserPlan("user-expired").Return("free")
+	planProvider.EXPECT().GetUserFeatures("user-expired").Return([]string{"dashboard"})
+
+	mux := newSubscriptionMux(t, reader, planProvider)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/subscription?user_id=user-expired", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp httptools.Response
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	data := resp.Data.(map[string]any)
+	assert.Equal(t, true, data["has_subscription"])
+	assert.Equal(t, "cancelled", data["status"])
+	assert.Equal(t, true, data["cancelled"])
+	assert.Equal(t, "free", data["plan"])
+	assert.Equal(t, float64(endsAt), data["ends_at"])
+	assert.ElementsMatch(t, []any{"dashboard"}, data["features"])
 }

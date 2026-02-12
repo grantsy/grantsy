@@ -26,6 +26,7 @@ type SubscriptionResponse struct {
 	HasSubscription bool             `json:"has_subscription" description:"Whether the user has an active subscription"`
 	TrialEndsAt     *int64           `json:"trial_ends_at"    description:"Unix timestamp when trial ends (if on trial)"`
 	RenewsAt        *int64           `json:"renews_at"        description:"Unix timestamp when subscription renews"`
+	EndsAt          *int64           `json:"ends_at"          description:"Unix timestamp when subscription ends (if cancelled)"`
 	Cancelled       bool             `json:"cancelled"        description:"Whether the subscription has been cancelled"`
 	Raw             *RawSubscription `json:"raw"              description:"Raw provider-specific subscription data (null if no subscription)"`
 }
@@ -159,6 +160,7 @@ func (route *RouteSubscription) Handler() http.Handler {
 			resp.Status = sub.Status
 			resp.TrialEndsAt = sub.TrialEndsAt
 			resp.RenewsAt = &sub.RenewsAt
+			resp.EndsAt = sub.EndsAt
 			resp.Cancelled = sub.Cancelled
 			resp.Raw = toRawSubscription(sub)
 		}
