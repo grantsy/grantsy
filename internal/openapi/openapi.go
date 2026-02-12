@@ -25,39 +25,62 @@ func NewReflector() *openapi3.Reflector {
 		WithVersion("1.0.0").
 		WithDescription("Microservice for managing SaaS feature entitlements")
 
-	r.Spec.SetAPIKeySecurity("ApiKeyAuth", "X-Api-Key", "header", "API key for authentication")
+	r.Spec.SetAPIKeySecurity(
+		"ApiKeyAuth",
+		"X-Api-Key",
+		"header",
+		"API key for authentication",
+	)
 
 	// Strip package prefix from schema names (e.g., "EntitlementsCheckResult" -> "CheckResult")
-	r.JSONSchemaReflector().InterceptDefName(func(t reflect.Type, defaultDefName string) string {
-		// Remove package prefix (e.g., "Entitlements", "Httptools", "Subscriptions")
-		prefixes := []string{"Entitlements", "Httptools", "Subscriptions"}
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(defaultDefName, prefix) {
-				return strings.TrimPrefix(defaultDefName, prefix)
+	r.JSONSchemaReflector().
+		InterceptDefName(func(t reflect.Type, defaultDefName string) string {
+			// Remove package prefix (e.g., "Entitlements", "Httptools", "Subscriptions")
+			prefixes := []string{
+				"Entitlements",
+				"Httptools",
+				"Subscriptions",
+				"Users",
 			}
-		}
-		return defaultDefName
-	})
+			for _, prefix := range prefixes {
+				if after, ok := strings.CutPrefix(defaultDefName, prefix); ok {
+					return after
+				}
+			}
+			return defaultDefName
+		})
 
 	return r
 }
 
 // AddErrorResponses adds common error response types to an operation.
 func AddErrorResponses(op openapi.OperationContext) {
-	op.AddRespStructure(new(httptools.ErrorResponse), func(cu *openapi.ContentUnit) {
-		cu.HTTPStatus = http.StatusBadRequest
-		cu.Description = "Bad Request"
-	})
-	op.AddRespStructure(new(httptools.ErrorResponse), func(cu *openapi.ContentUnit) {
-		cu.HTTPStatus = http.StatusUnauthorized
-		cu.Description = "Unauthorized - missing or invalid API key"
-	})
-	op.AddRespStructure(new(httptools.ErrorResponse), func(cu *openapi.ContentUnit) {
-		cu.HTTPStatus = http.StatusUnprocessableEntity
-		cu.Description = "Validation Failed"
-	})
-	op.AddRespStructure(new(httptools.ErrorResponse), func(cu *openapi.ContentUnit) {
-		cu.HTTPStatus = http.StatusInternalServerError
-		cu.Description = "Internal Server Error"
-	})
+	op.AddRespStructure(
+		new(httptools.ErrorResponse),
+		func(cu *openapi.ContentUnit) {
+			cu.HTTPStatus = http.StatusBadRequest
+			cu.Description = "Bad Request"
+		},
+	)
+	op.AddRespStructure(
+		new(httptools.ErrorResponse),
+		func(cu *openapi.ContentUnit) {
+			cu.HTTPStatus = http.StatusUnauthorized
+			cu.Description = "Unauthorized - missing or invalid API key"
+		},
+	)
+	op.AddRespStructure(
+		new(httptools.ErrorResponse),
+		func(cu *openapi.ContentUnit) {
+			cu.HTTPStatus = http.StatusUnprocessableEntity
+			cu.Description = "Validation Failed"
+		},
+	)
+	op.AddRespStructure(
+		new(httptools.ErrorResponse),
+		func(cu *openapi.ContentUnit) {
+			cu.HTTPStatus = http.StatusInternalServerError
+			cu.Description = "Internal Server Error"
+		},
+	)
 }

@@ -96,7 +96,7 @@ func TestCheckFeature_AllowedSubscribedUser(t *testing.T) {
 	result := svc.CheckFeature("user1", "api")
 
 	assert.True(t, result.Allowed)
-	assert.Equal(t, "feature_in_plan", result.Reason)
+	assert.Equal(t, entitlements.ReasonFeatureInPlan, result.Reason)
 	assert.Equal(t, "api", result.FeatureID)
 	assert.Equal(t, "user1", result.UserID)
 	assert.Equal(t, "pro", result.PlanID)
@@ -109,7 +109,7 @@ func TestCheckFeature_AllowedDefaultPlan(t *testing.T) {
 	result := svc.CheckFeature("user1", "dashboard")
 
 	assert.True(t, result.Allowed)
-	assert.Equal(t, "default_plan", result.Reason)
+	assert.Equal(t, entitlements.ReasonDefaultPlan, result.Reason)
 	assert.Equal(t, "free", result.PlanID)
 }
 
@@ -120,7 +120,7 @@ func TestCheckFeature_DeniedInsufficientPlan(t *testing.T) {
 	result := svc.CheckFeature("user1", "api")
 
 	assert.False(t, result.Allowed)
-	assert.Equal(t, "insufficient_plan", result.Reason)
+	assert.Equal(t, entitlements.ReasonInsufficientPlan, result.Reason)
 	assert.Equal(t, "free", result.PlanID)
 }
 
@@ -134,7 +134,7 @@ func TestCheckFeature_DeniedNoDefaultPlan(t *testing.T) {
 
 	result := svc.CheckFeature("user1", "dashboard")
 	assert.False(t, result.Allowed)
-	assert.Equal(t, "no_subscription", result.Reason)
+	assert.Equal(t, entitlements.ReasonNoSubscription, result.Reason)
 	assert.Equal(t, "", result.PlanID)
 }
 

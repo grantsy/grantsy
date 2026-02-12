@@ -10,7 +10,5 @@ packages:
   github.com/grantsy/grantsy/internal/subscriptions:
     interfaces:
       SubscriptionObserver:
-      PlanProvider:
-      SubscriptionReader:
       SubscriptionWriter:
       WebhookVerifier:

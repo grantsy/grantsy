@@ -2,6 +2,8 @@ package subscriptions
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/grantsy/grantsy/internal/infra/db"
@@ -135,9 +137,11 @@ func (r *Repo) GetSubscriptionByUserID(
 		&sub.CreatedAt, &sub.UpdatedAt,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
-
 	return &sub, nil
 }
 

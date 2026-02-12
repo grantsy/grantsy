@@ -22,7 +22,7 @@ type SubscriptionLoader interface {
 
 // PricingProvider supplies variant/pricing data for plans.
 type PricingProvider interface {
-	GetPlanVariants(planID string) []VariantDTO
+	GetPlanVariants(planID string) []Variant
 }
 
 // PlanUpdateNotifier is called when a user's plan changes
@@ -44,16 +44,26 @@ type Service struct {
 	notifier            PlanUpdateNotifier
 	mu                  sync.RWMutex
 	plansByID           map[string]*config.PlanConfig
+	featuresByID        map[string]*config.FeatureConfig
 	productToPlan       map[int]string
 	defaultPlanFeatures map[string]struct{}
 }
 
+type CheckReason string
+
+const (
+	ReasonNoSubscription   CheckReason = "no_subscription"
+	ReasonDefaultPlan      CheckReason = "default_plan"
+	ReasonFeatureInPlan    CheckReason = "feature_in_plan"
+	ReasonInsufficientPlan CheckReason = "insufficient_plan"
+)
+
 type CheckResult struct {
-	Allowed   bool   `json:"allowed"`
-	FeatureID string `json:"feature"`
-	UserID    string `json:"user_id"`
-	PlanID    string `json:"plan"`
-	Reason    string `json:"reason"`
+	Allowed   bool
+	FeatureID string
+	UserID    string
+	PlanID    string
+	Reason    CheckReason
 }
 
 func NewService(
@@ -78,6 +88,7 @@ func NewService(
 		subLoader:           subLoader,
 		notifier:            notifier,
 		plansByID:           make(map[string]*config.PlanConfig, len(ent.Plans)),
+		featuresByID:        make(map[string]*config.FeatureConfig, len(ent.Features)),
 		productToPlan:       make(map[int]string, len(products)),
 		defaultPlanFeatures: make(map[string]struct{}),
 	}
@@ -158,17 +169,17 @@ func (s *Service) CheckFeature(userID, featureID string) *CheckResult {
 		_, allowed = s.defaultPlanFeatures[featureID]
 	}
 
-	var reason string
+	var reason CheckReason
 	if planID == "" {
-		reason = "no_subscription"
+		reason = ReasonNoSubscription
 	} else if allowed {
 		if s.ent.DefaultPlan != "" && planID == s.ent.DefaultPlan {
-			reason = "default_plan"
+			reason = ReasonDefaultPlan
 		} else {
-			reason = "feature_in_plan"
+			reason = ReasonFeatureInPlan
 		}
 	} else {
-		reason = "insufficient_plan"
+		reason = ReasonInsufficientPlan
 	}
 
 	return &CheckResult{
@@ -291,6 +302,10 @@ func (s *Service) GetPlan(planID string) *config.PlanConfig {
 	return s.plansByID[planID]
 }
 
+func (s *Service) GetFeature(featureID string) *config.FeatureConfig {
+	return s.featuresByID[featureID]
+}
+
 func (s *Service) resolvePlanFromProduct(productID int) string {
 	return s.productToPlan[productID]
 }
@@ -298,6 +313,9 @@ func (s *Service) resolvePlanFromProduct(productID int) string {
 func (s *Service) buildLookups(products []config.ProductMapping) {
 	for i := range s.ent.Plans {
 		s.plansByID[s.ent.Plans[i].ID] = &s.ent.Plans[i]
+	}
+	for i := range s.ent.Features {
+		s.featuresByID[s.ent.Features[i].ID] = &s.ent.Features[i]
 	}
 	for _, mapping := range products {
 		s.productToPlan[mapping.ProductID] = mapping.PlanID

@@ -8,7 +8,7 @@ Microservice for managing SaaS feature entitlements. External billing (LemonSque
 
 ## Tech Stack
 
-- **Go 1.24+** with native `net/http` routing
+- **Go 1.25+** with native `net/http` routing
 - **Casbin** for RBAC policy enforcement
 - **SQLite** (default) or **PostgreSQL**
 - **valmid** for request validation
@@ -21,20 +21,33 @@ Microservice for managing SaaS feature entitlements. External billing (LemonSque
 
 ```
 grantsy/
-├── cmd/grantsy/main.go           # Entry point, wiring, graceful shutdown
+├── cmd/
+│   ├── grantsy/main.go           # Entry point, wiring, graceful shutdown
+│   └── openapi-gen/main.go       # OpenAPI spec generator
 ├── db/migrations/                # SQL migrations (golang-migrate)
 ├── internal/
 │   ├── entitlements/             # Core feature: Casbin service + API routes
 │   │   ├── service.go            # Policy loading, feature checks
 │   │   ├── route_check.go        # GET /v1/check
 │   │   ├── route_features.go     # GET /v1/features
+│   │   ├── route_feature.go      # GET /v1/features/{feature_id}
 │   │   ├── route_plans.go        # GET /v1/plans
+│   │   ├── route_plan.go         # GET /v1/plans/{plan_id}
 │   │   └── casbin_model.conf     # RBAC model
 │   ├── subscriptions/            # Subscription management
 │   │   ├── repo.go               # Database repository
 │   │   ├── provider_lemonsqueezy.go # LemonSqueezy SDK client, pricing cache, webhook verification
-│   │   ├── route_subscription.go # GET /v1/subscription
 │   │   └── route_webhook.go      # POST /v1/webhook/lemonsqueezy
+│   ├── users/                    # User state
+│   │   ├── route_user.go         # GET /v1/users/{user_id}
+│   │   └── types_subscription.go # Subscription response types
+│   ├── webhooks/                 # Outgoing webhooks
+│   │   ├── service.go            # Webhook enqueuing
+│   │   ├── worker.go             # Job processing
+│   │   └── payload.go            # Webhook payload types
+│   ├── openapi/                  # OpenAPI schema
+│   │   ├── openapi.go            # Reflector setup
+│   │   └── route.go              # GET /openapi.json
 │   ├── auth/                     # API key authentication middleware
 │   ├── httptools/                # HTTP utilities
 │   │   ├── response.go           # JSON envelope, RFC 9457 errors
@@ -52,6 +65,7 @@ grantsy/
 │       └── validation/           # valmid setup
 ├── pkg/gracefulshutdown/         # 3-phase graceful shutdown
 ├── config.yaml                   # Dev config
+├── openapi.json                  # Generated OpenAPI spec
 ├── Dockerfile                    # Multi-stage (golang:alpine → scratch)
 ├── docker-compose.yml
 └── Taskfile.yml
@@ -80,17 +94,23 @@ Errors follow RFC 9457 Problem Details.
 ### Public API
 
 ```
-GET /v1/check?user_id={uid}&feature={feature}
-→ { allowed, feature, user_id, plan, reason }
+GET /v1/check?user_id={uid}&feature={feature}&expand=feature,plan,plan.features
+→ { allowed, user_id, reason, feature?, plan? }
 
-GET /v1/features?user_id={uid}
-→ { user_id, plan, features[] }
+GET /v1/features
+→ { features[] }
 
-GET /v1/subscription?user_id={uid}
-→ { user_id, plan, status, features[], has_subscription, trial_ends_at, renews_at, cancelled, raw }
+GET /v1/features/{feature_id}
+→ { feature }
 
 GET /v1/plans?expand=features
-→ { plans[]{id, name, features[], variants[]?}, all_features[] }
+→ { plans[]{id, name, description, features[]?, variants[]?} }
+
+GET /v1/plans/{plan_id}?expand=features
+→ { plan{id, name, description, features[]?, variants[]?} }
+
+GET /v1/users/{user_id}?expand=plan,features,subscription
+→ { user_id, plan_id, plan?, features[]?, subscription? }
 ```
 
 ### Webhooks
@@ -229,12 +249,15 @@ Infrastructure routes also skip tracing, logging, and metrics.
 github.com/casbin/casbin/v2
 github.com/iamolegga/valmid
 github.com/iamolegga/lemonsqueezy-go
+github.com/swaggest/openapi-go
 github.com/golang-migrate/migrate/v4
 github.com/prometheus/client_golang
 modernc.org/sqlite
 github.com/jackc/pgx/v5
 gopkg.in/yaml.v3
 github.com/go-playground/validator/v10
+maragu.dev/goqite
+github.com/standard-webhooks/standard-webhooks/libraries
 ```
 
 ---
@@ -247,8 +270,11 @@ task run              # Run without hot reload
 task build            # Build to bin/grantsy
 task lint             # Run linter
 task generate-mocks   # Generate mocks with mockery
+task generate-openapi # Generate OpenAPI spec to openapi.json
+task test             # Run all tests
 task test-unit        # Unit tests with coverage (requires Docker for DB tests)
 task test-coverage    # View coverage report
+task swagger-ui       # Run Swagger UI for OpenAPI spec
 task docker           # Build Docker image
 task docker-run       # Run in Docker
 ```
@@ -260,8 +286,10 @@ task docker-run       # Run in Docker
 **Interface-based design:**
 - `entitlements.SubscriptionLoader` — repo implements
 - `entitlements.PricingProvider` — LemonSqueezyProvider implements
-- `subscriptions.SubscriptionObserver` — service implements
-- `subscriptions.PlanProvider` — service implements
+- `entitlements.PlanUpdateNotifier` — webhooks service implements
+- `subscriptions.SubscriptionObserver` — entitlements service implements
+- `subscriptions.SubscriptionWriter` — repo implements
+- `subscriptions.WebhookVerifier` — LemonSqueezyProvider implements
 
 **Dependency injection:** Services receive deps via constructors
 
@@ -278,7 +306,9 @@ task docker-run       # Run in Docker
 - Pricing/variants fetched from LemonSqueezy API at startup, cached in memory
 - `sync_period` config controls periodic pricing/variant data refresh from providers
 - All LemonSqueezy SDK usage consolidated in `subscriptions.LemonSqueezyProvider`
-- DB stores only subscriptions
+- DB stores subscriptions and outgoing webhook queue (goqite)
+- Outgoing webhooks: plan changes enqueued via goqite, processed by `webhooks.Worker`
 - Free tier: users without subscription get `default_plan`
 - Graceful shutdown: 3-phase (drain → shutdown → cancel)
+- OpenAPI spec generated via `cmd/openapi-gen`, served at `GET /openapi.json`
 - Do not write tests unless asked

@@ -3,7 +3,6 @@ package entitlements
 import (
 	"net/http"
 
-	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi3"
 
@@ -11,14 +10,8 @@ import (
 	oa "github.com/grantsy/grantsy/internal/openapi"
 )
 
-type FeaturesInput struct {
-	UserID string `in:"query=user_id" query:"user_id" validate:"required" description:"User ID to get features for"`
-}
-
 type FeaturesResponse struct {
-	UserID   string   `json:"user_id" description:"The user ID"`
-	Plan     string   `json:"plan" description:"The user's current plan ID"`
-	Features []string `json:"features" description:"List of feature IDs available to the user"`
+	Features []Feature `json:"features" description:"All available features"`
 }
 
 type RouteFeatures struct {
@@ -30,42 +23,39 @@ func NewRouteFeatures(service *Service) *RouteFeatures {
 }
 
 func (route *RouteFeatures) Register(mux *http.ServeMux, r *openapi3.Reflector) {
-	mux.Handle("GET /v1/features",
-		valmid.Middleware[FeaturesInput]()(route.Handler()),
-	)
+	mux.Handle("GET /v1/features", route.Handler())
 	RegisterFeaturesSchema(r)
 }
 
 func RegisterFeaturesSchema(r *openapi3.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/features")
-	op.AddReqStructure(new(FeaturesInput))
 	op.AddRespStructure(struct {
 		Data FeaturesResponse `json:"data"`
 		Meta httptools.Meta   `json:"meta"`
-		_    struct{}         `title:"FeaturesDataResponse"`
+		_    struct{}         `title:"FeaturesResponse"`
 	}{}, func(cu *openapi.ContentUnit) {
 		cu.HTTPStatus = http.StatusOK
-		cu.Description = "User features list"
+		cu.Description = "All available features"
 	})
 	oa.AddErrorResponses(op)
-	op.SetSummary("List user features")
-	op.SetDescription("Get all features available to a user based on their subscription plan")
-	op.SetTags("Entitlements")
+	op.SetSummary("List all features")
+	op.SetDescription("Get all available feature definitions")
+	op.SetTags("Features")
 	op.AddSecurity("ApiKeyAuth")
 	r.AddOperation(op)
 }
 
 func (route *RouteFeatures) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		input := valmid.Get[FeaturesInput](r)
+		features := route.service.GetFeatures()
 
-		planID := route.service.GetUserPlan(input.UserID)
-		features := route.service.GetUserFeatures(input.UserID)
+		featureDTOs := make([]Feature, len(features))
+		for i, f := range features {
+			featureDTOs[i] = ToFeature(f)
+		}
 
 		httptools.JSON(w, r, http.StatusOK, FeaturesResponse{
-			UserID:   input.UserID,
-			Plan:     planID,
-			Features: features,
+			Features: featureDTOs,
 		})
 	})
 }

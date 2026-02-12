@@ -23,6 +23,7 @@ import (
 	_ "github.com/grantsy/grantsy/internal/infra/validation"
 	"github.com/grantsy/grantsy/internal/openapi"
 	"github.com/grantsy/grantsy/internal/subscriptions"
+	"github.com/grantsy/grantsy/internal/users"
 	"github.com/grantsy/grantsy/internal/webhooks"
 	"github.com/grantsy/grantsy/pkg/gracefulshutdown"
 )
@@ -134,8 +135,10 @@ func main() {
 	routes := []httptools.Route{
 		entitlements.NewRouteCheck(entService),
 		entitlements.NewRouteFeatures(entService),
+		entitlements.NewRouteFeature(entService),
 		entitlements.NewRoutePlans(entService, lsProvider),
-		subscriptions.NewRouteSubscription(subsRepo, entService),
+		entitlements.NewRoutePlan(entService, lsProvider),
+		users.NewRouteUser(entService, subsRepo),
 		subscriptions.NewRouteWebhook(
 			lsProvider,
 			subsRepo,

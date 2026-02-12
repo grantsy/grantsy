@@ -2,7 +2,6 @@ package subscriptions_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -113,9 +112,9 @@ func TestRepoIntegration(t *testing.T) {
 					repo := drv.newDB(t)
 					ctx := context.Background()
 
-					_, err := repo.GetSubscriptionByUserID(ctx, "nonexistent")
-					require.Error(t, err)
-					assert.ErrorIs(t, err, sql.ErrNoRows)
+					got, err := repo.GetSubscriptionByUserID(ctx, "nonexistent")
+					require.NoError(t, err)
+					assert.Nil(t, got)
 				})
 
 				t.Run("nil_optional_fields", func(t *testing.T) {

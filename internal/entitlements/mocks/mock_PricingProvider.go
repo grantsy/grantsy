@@ -21,19 +21,19 @@ func (_m *MockPricingProvider) EXPECT() *MockPricingProvider_Expecter {
 }
 
 // GetPlanVariants provides a mock function with given fields: planID
-func (_m *MockPricingProvider) GetPlanVariants(planID string) []entitlements.VariantDTO {
+func (_m *MockPricingProvider) GetPlanVariants(planID string) []entitlements.Variant {
 	ret := _m.Called(planID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetPlanVariants")
 	}
 
-	var r0 []entitlements.VariantDTO
-	if rf, ok := ret.Get(0).(func(string) []entitlements.VariantDTO); ok {
+	var r0 []entitlements.Variant
+	if rf, ok := ret.Get(0).(func(string) []entitlements.Variant); ok {
 		r0 = rf(planID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entitlements.VariantDTO)
+			r0 = ret.Get(0).([]entitlements.Variant)
 		}
 	}
 
@@ -58,12 +58,12 @@ func (_c *MockPricingProvider_GetPlanVariants_Call) Run(run func(planID string))
 	return _c
 }
 
-func (_c *MockPricingProvider_GetPlanVariants_Call) Return(_a0 []entitlements.VariantDTO) *MockPricingProvider_GetPlanVariants_Call {
+func (_c *MockPricingProvider_GetPlanVariants_Call) Return(_a0 []entitlements.Variant) *MockPricingProvider_GetPlanVariants_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockPricingProvider_GetPlanVariants_Call) RunAndReturn(run func(string) []entitlements.VariantDTO) *MockPricingProvider_GetPlanVariants_Call {
+func (_c *MockPricingProvider_GetPlanVariants_Call) RunAndReturn(run func(string) []entitlements.Variant) *MockPricingProvider_GetPlanVariants_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -48,6 +48,12 @@ tasks:
     cmds:
       - go vet ./...
 
+  swagger-ui:
+    desc: Run Swagger UI for OpenAPI spec
+    deps: [generate-openapi]
+    cmds:
+      - docker run --rm -p 8888:8080 -e SWAGGER_JSON=/spec/openapi.json -v {{.ROOT_DIR}}/openapi.json:/spec/openapi.json swaggerapi/swagger-ui
+
   docker:
     desc: Build Docker image
     cmds:

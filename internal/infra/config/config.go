@@ -53,9 +53,10 @@ type EntitlementsConfig struct {
 }
 
 type PlanConfig struct {
-	ID       string   `yaml:"id"       validate:"required"`
-	Name     string   `yaml:"name"     validate:"required"`
-	Features []string `yaml:"features" validate:"required,min=1"`
+	ID          string   `yaml:"id"          validate:"required"`
+	Name        string   `yaml:"name"        validate:"required"`
+	Description string   `yaml:"description"`
+	Features    []string `yaml:"features"    validate:"required,min=1"`
 }
 
 type FeatureConfig struct {

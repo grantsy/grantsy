@@ -33,7 +33,7 @@ func newCheckMux(t *testing.T) (*http.ServeMux, *entitlements.Service) {
 func TestRouteCheck_AllowedFeature(t *testing.T) {
 	mux, _ := newCheckMux(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/check?user_id=prouser&feature=api", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/check?user_id=prouser&feature=api&expand=feature&expand=plan", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -45,14 +45,21 @@ func TestRouteCheck_AllowedFeature(t *testing.T) {
 	data := resp.Data.(map[string]any)
 	assert.Equal(t, true, data["allowed"])
 	assert.Equal(t, "feature_in_plan", data["reason"])
-	assert.Equal(t, "api", data["feature"])
 	assert.Equal(t, "prouser", data["user_id"])
+
+	feature := data["feature"].(map[string]any)
+	assert.Equal(t, "api", feature["id"])
+	assert.Equal(t, "API", feature["name"])
+
+	plan := data["plan"].(map[string]any)
+	assert.Equal(t, "pro", plan["id"])
+	assert.Equal(t, "Pro", plan["name"])
 }
 
 func TestRouteCheck_AllowedDefaultPlan(t *testing.T) {
 	mux, _ := newCheckMux(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/check?user_id=freeuser&feature=dashboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/check?user_id=freeuser&feature=dashboard&expand=feature&expand=plan", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -69,7 +76,7 @@ func TestRouteCheck_AllowedDefaultPlan(t *testing.T) {
 func TestRouteCheck_DeniedFeature(t *testing.T) {
 	mux, _ := newCheckMux(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/check?user_id=freeuser&feature=api", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/check?user_id=freeuser&feature=api&expand=feature&expand=plan", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 

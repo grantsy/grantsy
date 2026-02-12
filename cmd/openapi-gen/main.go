@@ -7,7 +7,7 @@ import (
 
 	"github.com/grantsy/grantsy/internal/entitlements"
 	"github.com/grantsy/grantsy/internal/openapi"
-	"github.com/grantsy/grantsy/internal/subscriptions"
+	"github.com/grantsy/grantsy/internal/users"
 )
 
 func main() {
@@ -16,8 +16,10 @@ func main() {
 	// Register all API schemas
 	entitlements.RegisterCheckSchema(reflector)
 	entitlements.RegisterFeaturesSchema(reflector)
+	entitlements.RegisterFeatureSchema(reflector)
 	entitlements.RegisterPlansSchema(reflector)
-	subscriptions.RegisterSubscriptionSchema(reflector)
+	entitlements.RegisterPlanSchema(reflector)
+	users.RegisterUserSchema(reflector)
 	// webhook intentionally excluded from OpenAPI documentation
 
 	data, err := json.MarshalIndent(reflector.Spec, "", "  ")

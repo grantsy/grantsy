@@ -12,7 +12,7 @@
           "Entitlements"
         ],
         "summary": "Check feature access",
-        "description": "Check if a user has access to a specific feature based on their subscription plan",
+        "description": "Check if a user has access to a specific feature based on their subscription plan. Use ?expand=feature\u0026expand=plan\u0026expand=plan.features to include additional details.",
         "parameters": [
           {
             "name": "user_id",
@@ -31,6 +31,18 @@
               "type": "string",
               "description": "Feature ID to check access for"
             }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "description": "Fields to expand (use ?expand=feature\u0026expand=plan\u0026expand=plan.features)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CheckExpand"
+              },
+              "description": "Fields to expand (use ?expand=feature\u0026expand=plan\u0026expand=plan.features)"
+            }
           }
         ],
         "responses": {
@@ -39,11 +51,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "CheckResultResponse",
+                  "title": "CheckResponse",
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/CheckResult"
+                      "$ref": "#/components/schemas/CheckResponse"
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
@@ -104,32 +116,108 @@
     "/v1/features": {
       "get": {
         "tags": [
-          "Entitlements"
+          "Features"
         ],
-        "summary": "List user features",
-        "description": "Get all features available to a user based on their subscription plan",
+        "summary": "List all features",
+        "description": "Get all available feature definitions",
+        "responses": {
+          "200": {
+            "description": "All available features",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "FeaturesResponse",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FeaturesResponse"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/features/{feature_id}": {
+      "get": {
+        "tags": [
+          "Features"
+        ],
+        "summary": "Get feature by ID",
+        "description": "Get details of a specific feature by its identifier",
         "parameters": [
           {
-            "name": "user_id",
-            "in": "query",
-            "description": "User ID to get features for",
+            "name": "feature_id",
+            "in": "path",
+            "description": "Feature ID to look up",
+            "required": true,
             "schema": {
               "type": "string",
-              "description": "User ID to get features for"
+              "description": "Feature ID to look up"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "User features list",
+            "description": "Feature details",
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "FeaturesDataResponse",
+                  "title": "FeatureResponse",
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/FeaturesResponse"
+                      "$ref": "#/components/schemas/FeatureResponse"
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
@@ -193,15 +281,18 @@
           "Plans"
         ],
         "summary": "List all plans",
-        "description": "Get all available subscription plans. Use ?expand=features to include feature details",
+        "description": "Get all available subscription plans with their pricing variants. Use ?expand=features to include features.",
         "parameters": [
           {
             "name": "expand",
             "in": "query",
-            "description": "Set to 'features' to include feature details",
+            "description": "Fields to expand (use ?expand=features)",
             "schema": {
-              "type": "string",
-              "description": "Set to 'features' to include feature details"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PlansExpand"
+              },
+              "description": "Fields to expand (use ?expand=features)"
             }
           }
         ],
@@ -211,7 +302,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "PlansDataResponse",
+                  "title": "PlansResponse",
                   "type": "object",
                   "properties": {
                     "data": {
@@ -273,35 +364,147 @@
         ]
       }
     },
-    "/v1/subscription": {
+    "/v1/plans/{plan_id}": {
       "get": {
         "tags": [
-          "Subscriptions"
+          "Plans"
         ],
-        "summary": "Get user subscription",
-        "description": "Get subscription details for a user including their plan, status, and available features",
+        "summary": "Get plan by ID",
+        "description": "Get details of a specific plan by its identifier. Use ?expand=features to include feature details.",
         "parameters": [
           {
-            "name": "user_id",
+            "name": "expand",
             "in": "query",
-            "description": "User ID to get subscription for",
+            "description": "Fields to expand (use ?expand=features)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PlanExpand"
+              },
+              "description": "Fields to expand (use ?expand=features)"
+            }
+          },
+          {
+            "name": "plan_id",
+            "in": "path",
+            "description": "Plan ID to look up",
+            "required": true,
             "schema": {
               "type": "string",
-              "description": "User ID to get subscription for"
+              "description": "Plan ID to look up"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "User subscription details",
+            "description": "Plan details",
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "SubscriptionDataResponse",
+                  "title": "PlanResponse",
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/SubscriptionResponse"
+                      "$ref": "#/components/schemas/PlanResponse"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/users/{user_id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get user state",
+        "description": "Get the current state for a user. Always returns plan_id. Use ?expand=plan,features,subscription to include additional details.",
+        "parameters": [
+          {
+            "name": "expand",
+            "in": "query",
+            "description": "Fields to expand (use ?expand=plan\u0026expand=features\u0026expand=subscription)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/UserExpand"
+              },
+              "description": "Fields to expand (use ?expand=plan\u0026expand=features\u0026expand=subscription)"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User ID to look up",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User ID to look up"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "UserResponse",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/UserResponse"
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
@@ -362,23 +565,40 @@
   },
   "components": {
     "schemas": {
-      "CheckResult": {
+      "CheckExpand": {
+        "enum": [
+          "feature",
+          "plan",
+          "plan.features"
+        ],
+        "type": "string"
+      },
+      "CheckResponse": {
         "type": "object",
         "properties": {
           "allowed": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the user has access to this feature"
           },
           "feature": {
-            "type": "string"
+            "$ref": "#/components/schemas/Feature"
           },
           "plan": {
-            "type": "string"
+            "$ref": "#/components/schemas/Plan"
           },
           "reason": {
-            "type": "string"
+            "enum": [
+              "no_subscription",
+              "default_plan",
+              "feature_in_plan",
+              "insufficient_plan"
+            ],
+            "type": "string",
+            "description": "Reason for the access decision"
           },
           "user_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The user ID"
           }
         }
       },
@@ -390,7 +610,7 @@
           }
         }
       },
-      "FeatureDTO": {
+      "Feature": {
         "type": "object",
         "properties": {
           "description": {
@@ -407,24 +627,24 @@
           }
         }
       },
+      "FeatureResponse": {
+        "type": "object",
+        "properties": {
+          "feature": {
+            "$ref": "#/components/schemas/Feature"
+          }
+        }
+      },
       "FeaturesResponse": {
         "type": "object",
         "properties": {
           "features": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Feature"
             },
-            "description": "List of feature IDs available to the user",
+            "description": "All available features",
             "nullable": true
-          },
-          "plan": {
-            "type": "string",
-            "description": "The user's current plan ID"
-          },
-          "user_id": {
-            "type": "string",
-            "description": "The user ID"
           }
         }
       },
@@ -439,7 +659,7 @@
           }
         }
       },
-      "LemonSqueezySubscriptionDTO": {
+      "LemonSqueezySubscription": {
         "type": "object",
         "properties": {
           "billing_anchor": {
@@ -539,16 +759,19 @@
           }
         }
       },
-      "PlanDTO": {
+      "Plan": {
         "type": "object",
         "properties": {
+          "description": {
+            "type": "string",
+            "description": "Plan description"
+          },
           "features": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Feature"
             },
-            "description": "List of feature IDs included in this plan",
-            "nullable": true
+            "description": "Features included in this plan"
           },
           "id": {
             "type": "string",
@@ -561,26 +784,39 @@
           "variants": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/VariantDTO"
+              "$ref": "#/components/schemas/Variant"
             },
             "description": "Pricing variants for this plan"
           }
         }
       },
+      "PlanExpand": {
+        "enum": [
+          "features"
+        ],
+        "type": "string"
+      },
+      "PlanResponse": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          }
+        }
+      },
+      "PlansExpand": {
+        "enum": [
+          "features"
+        ],
+        "type": "string"
+      },
       "PlansResponse": {
         "type": "object",
         "properties": {
-          "all_features": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FeatureDTO"
-            },
-            "description": "All feature definitions (when expand=features)"
-          },
           "plans": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PlanDTO"
+              "$ref": "#/components/schemas/Plan"
             },
             "description": "List of available plans",
             "nullable": true
@@ -612,6 +848,7 @@
             "enum": [
               "https://grantsy.example/errors/validation-failed",
               "https://grantsy.example/errors/bad-request",
+              "https://grantsy.example/errors/not-found",
               "https://grantsy.example/errors/unauthorized",
               "https://grantsy.example/errors/internal-error"
             ],
@@ -623,7 +860,7 @@
         "type": "object",
         "oneOf": [
           {
-            "$ref": "#/components/schemas/LemonSqueezySubscriptionDTO"
+            "$ref": "#/components/schemas/LemonSqueezySubscription"
           }
         ]
       },
@@ -642,7 +879,41 @@
           }
         }
       },
-      "SubscriptionResponse": {
+      "UserExpand": {
+        "enum": [
+          "plan",
+          "features",
+          "subscription"
+        ],
+        "type": "string"
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feature"
+            },
+            "description": "Features available to the user (requires expand=features)"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "plan_id": {
+            "type": "string",
+            "description": "The user's current plan ID"
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/UserSubscription"
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user ID"
+          }
+        }
+      },
+      "UserSubscription": {
         "type": "object",
         "properties": {
           "cancelled": {
@@ -653,22 +924,6 @@
             "type": "integer",
             "description": "Unix timestamp when subscription ends (if cancelled)",
             "nullable": true
-          },
-          "features": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "List of feature IDs available to the user",
-            "nullable": true
-          },
-          "has_subscription": {
-            "type": "boolean",
-            "description": "Whether the user has an active subscription"
-          },
-          "plan": {
-            "type": "string",
-            "description": "The user's current plan ID"
           },
           "raw": {
             "$ref": "#/components/schemas/RawSubscription"
@@ -686,14 +941,10 @@
             "type": "integer",
             "description": "Unix timestamp when trial ends (if on trial)",
             "nullable": true
-          },
-          "user_id": {
-            "type": "string",
-            "description": "The user ID"
           }
         }
       },
-      "VariantDTO": {
+      "Variant": {
         "type": "object",
         "properties": {
           "has_free_trial": {

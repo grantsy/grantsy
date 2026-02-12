@@ -20,7 +20,7 @@ type LemonSqueezyProvider struct {
 	client        *lemonsqueezy.Client
 	productToPlan map[int]string
 	mu            sync.RWMutex
-	cache         map[string][]entitlements.VariantDTO
+	cache         map[string][]entitlements.Variant
 }
 
 func NewLemonSqueezyProvider(
@@ -39,7 +39,7 @@ func NewLemonSqueezyProvider(
 			lemonsqueezy.WithSigningSecret(signingSecret),
 		),
 		productToPlan: productToPlan,
-		cache:         make(map[string][]entitlements.VariantDTO),
+		cache:         make(map[string][]entitlements.Variant),
 	}
 }
 
@@ -72,7 +72,7 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 		return
 	}
 
-	cache := make(map[string][]entitlements.VariantDTO)
+	cache := make(map[string][]entitlements.Variant)
 
 	for _, variant := range resp.Included {
 		if variant.Attributes.Status != "published" {
@@ -95,7 +95,7 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 			intervalCount = *variant.Attributes.IntervalCount
 		}
 
-		cache[planID] = append(cache[planID], entitlements.VariantDTO{
+		cache[planID] = append(cache[planID], entitlements.Variant{
 			ID:                 id,
 			Name:               variant.Attributes.Name,
 			Price:              variant.Attributes.Price,
@@ -122,7 +122,7 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 }
 
 // GetPlanVariants returns cached variant data for the given plan.
-func (p *LemonSqueezyProvider) GetPlanVariants(planID string) []entitlements.VariantDTO {
+func (p *LemonSqueezyProvider) GetPlanVariants(planID string) []entitlements.Variant {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.cache[planID]

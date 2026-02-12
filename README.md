@@ -44,9 +44,11 @@ All responses are wrapped in a JSON envelope with `data` and `meta` fields. Erro
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/v1/check?user_id={uid}&feature={feature}` | Check if a user has access to a feature |
-| `GET` | `/v1/features?user_id={uid}` | List all features available to a user |
-| `GET` | `/v1/subscription?user_id={uid}` | Get a user's subscription details |
-| `GET` | `/v1/plans?expand=features` | List all plans and their features |
+| `GET` | `/v1/features` | List all available features |
+| `GET` | `/v1/features/{feature_id}` | Get a specific feature |
+| `GET` | `/v1/plans?expand=features` | List all plans and their pricing variants |
+| `GET` | `/v1/plans/{plan_id}?expand=features` | Get a specific plan |
+| `GET` | `/v1/users/{user_id}?expand=plan,features,subscription` | Get user state |
 | `POST` | `/v1/webhook/lemonsqueezy` | LemonSqueezy webhook endpoint |
 
 All endpoints except the webhook require an `X-Api-Key` header.
