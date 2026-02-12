@@ -31,17 +31,17 @@ const (
 )
 
 type CheckRequest struct {
-	UserID  string        `in:"query=user_id" query:"user_id" validate:"required" description:"User ID to check access for"`
-	Feature string        `in:"query=feature" query:"feature" validate:"required" description:"Feature ID to check access for"`
-	Expand  []CheckExpand `in:"query=expand" query:"expand" validate:"dive,oneof=feature plan plan.features" description:"Fields to expand (use ?expand=feature&expand=plan&expand=plan.features)"`
+	UserID  string        `in:"query=user_id" query:"user_id" validate:"required"                              description:"User ID to check access for"`
+	Feature string        `in:"query=feature" query:"feature" validate:"required"                              description:"Feature ID to check access for"`
+	Expand  []CheckExpand `in:"query=expand"  query:"expand"  validate:"dive,oneof=feature plan plan.features" description:"Fields to expand (use ?expand=feature&expand=plan&expand=plan.features)"`
 }
 
 type CheckResponse struct {
-	Allowed bool        `json:"allowed" description:"Whether the user has access to this feature"`
-	UserID  string      `json:"user_id" description:"The user ID"`
-	Reason  CheckReason `json:"reason" enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan" description:"Reason for the access decision"`
+	Allowed bool        `json:"allowed"           description:"Whether the user has access to this feature"`
+	UserID  string      `json:"user_id"           description:"The user ID"`
+	Reason  CheckReason `json:"reason"            description:"Reason for the access decision"                                         enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan"`
 	Feature *Feature    `json:"feature,omitempty" description:"The checked feature (requires expand=feature)"`
-	Plan    *Plan       `json:"plan,omitempty" description:"The user's current plan (requires expand=plan or expand=plan.features)"`
+	Plan    *Plan       `json:"plan,omitempty"    description:"The user's current plan (requires expand=plan or expand=plan.features)"`
 }
 
 type RouteCheck struct {
@@ -72,7 +72,9 @@ func RegisterCheckSchema(r *openapi3.Reflector) {
 	})
 	oa.AddErrorResponses(op)
 	op.SetSummary("Check feature access")
-	op.SetDescription("Check if a user has access to a specific feature based on their subscription plan. Use ?expand=feature&expand=plan&expand=plan.features to include additional details.")
+	op.SetDescription(
+		"Check if a user has access to a specific feature based on their subscription plan. Use ?expand=feature&expand=plan&expand=plan.features to include additional details.",
+	)
 	op.SetTags("Entitlements")
 	op.AddSecurity("ApiKeyAuth")
 	r.AddOperation(op)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"maragu.dev/goqite"
-	"maragu.dev/goqite/jobs"
+	"github.com/iamolegga/goqite"
+	"github.com/iamolegga/goqite/jobs"
 
 	"github.com/grantsy/grantsy/internal/infra/config"
 	"github.com/grantsy/grantsy/internal/infra/metrics"

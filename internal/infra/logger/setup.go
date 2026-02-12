@@ -65,8 +65,8 @@ func shortenSourcePath(path string) string {
 	}
 
 	for _, prefix := range prefixes {
-		if idx := strings.Index(path, prefix); idx != -1 {
-			shortened := path[idx+len(prefix):]
+		if _, after, ok := strings.Cut(path, prefix); ok {
+			shortened := after
 			if atIdx := strings.Index(shortened, "@"); atIdx != -1 {
 				if slashIdx := strings.Index(shortened[atIdx:], "/"); slashIdx != -1 {
 					shortened = shortened[:atIdx] + shortened[atIdx+slashIdx:]

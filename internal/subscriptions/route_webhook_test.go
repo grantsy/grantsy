@@ -233,7 +233,11 @@ func TestRouteWebhook_InvalidPayload(t *testing.T) {
 	route := subscriptions.NewRouteWebhook(verifier, writer, observer)
 	handler := route.Handler()
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(invalidBody))
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/v1/webhook/lemonsqueezy",
+		strings.NewReader(invalidBody),
+	)
 	req.Header.Set("X-Signature", "valid-sig")
 	req.Header.Set("X-Event-Name", "subscription_created")
 	w := httptest.NewRecorder()
@@ -275,7 +279,9 @@ func TestRouteWebhook_ObserverError(t *testing.T) {
 	writer.EXPECT().UpsertSubscription(mock.Anything, mock.Anything).Return(nil)
 
 	observer := mocks.NewMockSubscriptionObserver(t)
-	observer.EXPECT().OnSubscriptionChange(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(assert.AnError)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(assert.AnError)
 
 	route := subscriptions.NewRouteWebhook(verifier, writer, observer)
 	handler := route.Handler()
@@ -299,7 +305,9 @@ func TestRouteWebhook_Success_Created(t *testing.T) {
 	writer.EXPECT().UpsertSubscription(mock.Anything, mock.Anything).Return(nil)
 
 	observer := mocks.NewMockSubscriptionObserver(t)
-	observer.EXPECT().OnSubscriptionChange(mock.Anything, "user-123", 300, true, mock.Anything).Return(nil)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, "user-123", 300, true, mock.Anything).
+		Return(nil)
 
 	route := subscriptions.NewRouteWebhook(verifier, writer, observer)
 	handler := route.Handler()
@@ -323,7 +331,9 @@ func TestRouteWebhook_Success_Updated(t *testing.T) {
 	writer.EXPECT().UpsertSubscription(mock.Anything, mock.Anything).Return(nil)
 
 	observer := mocks.NewMockSubscriptionObserver(t)
-	observer.EXPECT().OnSubscriptionChange(mock.Anything, "user-123", 300, true, mock.Anything).Return(nil)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, "user-123", 300, true, mock.Anything).
+		Return(nil)
 
 	route := subscriptions.NewRouteWebhook(verifier, writer, observer)
 	handler := route.Handler()

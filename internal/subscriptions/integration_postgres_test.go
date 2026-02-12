@@ -74,10 +74,10 @@ func newPostgresRepo(baseURL string) func(t *testing.T) *subscriptions.Repo {
 
 		testDSN := replaceDatabaseInURL(baseURL, dbName)
 
-		err = db.Migrate("postgres", testDSN)
+		err = db.Migrate("postgres", testDSN, "")
 		require.NoError(t, err, "postgres migration failed for %s", dbName)
 
-		database, err := db.New("postgres", testDSN)
+		database, err := db.New("postgres", testDSN, "")
 		require.NoError(t, err, "postgres connection failed for %s", dbName)
 
 		t.Cleanup(func() { database.Close() })

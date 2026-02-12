@@ -40,6 +40,10 @@
         "dsn": {
           "type": "string",
           "description": "Database connection string"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Optional namespace to isolate tables from other apps sharing the same database. For PostgreSQL: creates a schema. For SQLite: prefixes table names."
         }
       }
     },

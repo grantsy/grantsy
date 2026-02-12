@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"maragu.dev/goqite"
-	"maragu.dev/goqite/jobs"
+	"github.com/iamolegga/goqite"
+	"github.com/iamolegga/goqite/jobs"
 
 	"github.com/grantsy/grantsy/internal/auth"
 	"github.com/grantsy/grantsy/internal/entitlements"
@@ -48,12 +48,16 @@ func main() {
 	logger.Setup(cfg.Log.Level, cfg.Log.Format, cfg.Env)
 	slog.Debug("starting grantsy", "config", *cfg)
 
-	if err := db.Migrate(cfg.Database.Driver, cfg.Database.DSN); err != nil {
+	if err := db.Migrate(cfg.Database.Driver, cfg.Database.DSN, cfg.Database.Namespace); err != nil {
 		slog.Error("failed to run migrations", "error", err)
 		os.Exit(1)
 	}
 
-	database, err := db.New(cfg.Database.Driver, cfg.Database.DSN)
+	database, err := db.New(
+		cfg.Database.Driver,
+		cfg.Database.DSN,
+		cfg.Database.Namespace,
+	)
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err)
 		os.Exit(1)
@@ -64,24 +68,25 @@ func main() {
 	// Services
 	//
 
-	var flavor goqite.SQLFlavor
+	queueOpts := goqite.NewOpts{
+		DB:         database.DB,
+		Name:       "webhooks",
+		MaxReceive: 5,
+		Timeout:    time.Second * 15,
+	}
 	switch cfg.Database.Driver {
 	case "postgres":
-		flavor = goqite.SQLFlavorPostgreSQL
+		queueOpts.SQLFlavor = goqite.SQLFlavorPostgreSQL
+		queueOpts.Schema = cfg.Database.Namespace
 	case "sqlite":
-		flavor = goqite.SQLFlavorSQLite
+		queueOpts.TablePrefix = cfg.Database.Namespace
 	default:
 		slog.Error("unsupported database driver", "driver", cfg.Database.Driver)
 		os.Exit(1)
 	}
 
-	webhookQueue := goqite.New(goqite.NewOpts{
-		DB:         database.DB,
-		Name:       "webhooks",
-		SQLFlavor:  flavor,
-		MaxReceive: 5,
-		Timeout:    time.Second * 15,
-	})
+	webhookQueue := goqite.New(queueOpts)
+	webhookQueue.Setup(gracefulshutdown.GetServerBaseContext())
 
 	// Create services (order matters for DI chain)
 	subsRepo := subscriptions.NewRepo(database)

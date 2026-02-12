@@ -27,8 +27,9 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Driver string `yaml:"driver" validate:"required,oneof=sqlite postgres"`
-	DSN    string `yaml:"dsn"    validate:"required"`
+	Driver    string `yaml:"driver"    validate:"required,oneof=sqlite postgres"`
+	DSN       string `yaml:"dsn"       validate:"required"`
+	Namespace string `yaml:"namespace"`
 }
 
 type AuthConfig struct {

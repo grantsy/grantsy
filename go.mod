@@ -1,6 +1,6 @@
 module github.com/grantsy/grantsy
 
-go 1.25.7
+go 1.26.0
 
 require (
 	github.com/casbin/casbin/v2 v2.135.0
@@ -10,6 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
+	github.com/iamolegga/goqite v0.0.0-20260212200800-0fd750c013c1
 	github.com/iamolegga/lemonsqueezy-go v0.0.0-20260208170847-671194e9e163
 	github.com/iamolegga/valmid v0.1.0
 	github.com/jackc/pgx/v5 v5.8.0
@@ -22,7 +23,6 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0
 	github.com/zenazn/goji v1.0.1
 	gopkg.in/yaml.v3 v3.0.1
-	maragu.dev/goqite v0.3.2-0.20251120080437-471f9d49ce35
 	modernc.org/sqlite v1.45.0
 )
 

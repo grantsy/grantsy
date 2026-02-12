@@ -80,6 +80,7 @@ Application environment.
 |-----|------|----------|-------------|
 | `driver` | `string` | Yes | `sqlite` or `postgres` |
 | `dsn` | `string` | Yes | Database connection string. For SQLite: file path. For PostgreSQL: connection URI |
+| `namespace` | `string` | No | Isolates tables from other apps sharing the same database. For PostgreSQL: creates a schema. For SQLite: prefixes table names |
 
 ### `auth`
 
@@ -177,6 +178,7 @@ server:
 database:
   driver: sqlite
   dsn: /var/lib/grantsy/grantsy.db
+  namespace: grantsy
 
 entitlements:
   default_plan: free

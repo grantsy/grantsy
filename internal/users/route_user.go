@@ -48,16 +48,16 @@ const (
 )
 
 type UserRequest struct {
-	UserID string       `in:"path=user_id" path:"user_id" validate:"required" description:"User ID to look up"`
-	Expand []UserExpand `in:"query=expand" query:"expand" validate:"dive,oneof=plan features subscription" description:"Fields to expand (use ?expand=plan&expand=features&expand=subscription)"`
+	UserID string       `in:"path=user_id" path:"user_id" validate:"required"                              description:"User ID to look up"`
+	Expand []UserExpand `in:"query=expand"                validate:"dive,oneof=plan features subscription" description:"Fields to expand (use ?expand=plan&expand=features&expand=subscription)" query:"expand"`
 }
 
 type UserResponse struct {
-	UserID       string                `json:"user_id"                description:"The user ID"`
-	PlanID       string                `json:"plan_id"                description:"The user's current plan ID"`
-	Plan         *entitlements.Plan    `json:"plan,omitempty"         description:"Plan details (requires expand=plan)"`
+	UserID       string                 `json:"user_id"                description:"The user ID"`
+	PlanID       string                 `json:"plan_id"                description:"The user's current plan ID"`
+	Plan         *entitlements.Plan     `json:"plan,omitempty"         description:"Plan details (requires expand=plan)"`
 	Features     []entitlements.Feature `json:"features,omitempty"     description:"Features available to the user (requires expand=features)"`
-	Subscription *UserSubscription     `json:"subscription,omitempty" description:"Subscription details (requires expand=subscription)"`
+	Subscription *UserSubscription      `json:"subscription,omitempty" description:"Subscription details (requires expand=subscription)"`
 }
 
 type RouteUser struct {
@@ -89,7 +89,9 @@ func RegisterUserSchema(r *openapi3.Reflector) {
 	})
 	oa.AddErrorResponses(op)
 	op.SetSummary("Get user state")
-	op.SetDescription("Get the current state for a user. Always returns plan_id. Use ?expand=plan,features,subscription to include additional details.")
+	op.SetDescription(
+		"Get the current state for a user. Always returns plan_id. Use ?expand=plan,features,subscription to include additional details.",
+	)
 	op.SetTags("Users")
 	op.AddSecurity("ApiKeyAuth")
 	r.AddOperation(op)
@@ -145,4 +147,3 @@ func (route *RouteUser) Handler() http.Handler {
 		httptools.JSON(w, r, http.StatusOK, resp)
 	})
 }
-

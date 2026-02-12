@@ -129,6 +129,10 @@ func (p *LemonSqueezyProvider) GetPlanVariants(planID string) []entitlements.Var
 }
 
 // VerifyWebhook validates a LemonSqueezy webhook signature.
-func (p *LemonSqueezyProvider) VerifyWebhook(ctx context.Context, signature string, body []byte) bool {
+func (p *LemonSqueezyProvider) VerifyWebhook(
+	ctx context.Context,
+	signature string,
+	body []byte,
+) bool {
 	return p.client.Webhooks.Verify(ctx, signature, body)
 }

@@ -54,8 +54,9 @@ func (r *Repo) UpsertSubscription(
 	ctx context.Context,
 	sub *Subscription,
 ) error {
-	query := r.db.Rebind(`
-		INSERT INTO subscriptions_lemonsqueezy (
+	table := r.db.TableName("subscriptions_lemonsqueezy")
+	query := r.db.Rebind(fmt.Sprintf(`
+		INSERT INTO %s (
 			id, user_id, customer_id, order_id, product_id, product_name,
 			variant_id, variant_name, status, status_formatted,
 			card_brand, card_last_four, cancelled, trial_ends_at,
@@ -81,7 +82,7 @@ func (r *Repo) UpsertSubscription(
 			renews_at = excluded.renews_at,
 			ends_at = excluded.ends_at,
 			updated_at = excluded.updated_at
-	`)
+	`, table))
 
 	_, err := r.db.ExecContext(
 		ctx,
@@ -118,15 +119,16 @@ func (r *Repo) GetSubscriptionByUserID(
 	ctx context.Context,
 	userID string,
 ) (*Subscription, error) {
-	query := r.db.Rebind(`
+	table := r.db.TableName("subscriptions_lemonsqueezy")
+	query := r.db.Rebind(fmt.Sprintf(`
 		SELECT id, user_id, customer_id, order_id, product_id, product_name,
 			variant_id, variant_name, status, status_formatted,
 			card_brand, card_last_four, cancelled, trial_ends_at,
 			billing_anchor, subscription_item_id, renews_at, ends_at,
 			created_at, updated_at
-		FROM subscriptions_lemonsqueezy
+		FROM %s
 		WHERE user_id = $1
-	`)
+	`, table))
 
 	var sub Subscription
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(
@@ -146,12 +148,13 @@ func (r *Repo) GetSubscriptionByUserID(
 }
 
 func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
-	query := `
+	table := r.db.TableName("subscriptions_lemonsqueezy")
+	query := fmt.Sprintf(`
 		SELECT user_id, product_id
-		FROM subscriptions_lemonsqueezy
+		FROM %s
 		WHERE product_id IS NOT NULL
 		  AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
-	`
+	`, table)
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {

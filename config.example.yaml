@@ -8,6 +8,7 @@ server:
 database:
   driver: sqlite
   dsn: /var/lib/grantsy/grantsy.db
+  namespace: grantsy  # optional: isolates tables from other apps sharing the same database
 
 entitlements:
   # default_plan is optional. If set, users without subscription get this plan.

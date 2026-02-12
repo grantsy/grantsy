@@ -96,6 +96,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7 h1:X+2YciYSxvMQK0UZ7sg45ZVabVZ
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7/go.mod h1:lW34nIZuQ8UDPdkon5fmfp2l3+ZkQ2me/+oecHYLOII=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
 github.com/hashicorp/golang-lru/v2 v2.0.7/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
+github.com/iamolegga/goqite v0.0.0-20260212200800-0fd750c013c1 h1:fOi2kpNc4ddJwjOnVHrS9uT2G3T6sLrjpb+Um5c93JM=
+github.com/iamolegga/goqite v0.0.0-20260212200800-0fd750c013c1/go.mod h1:XNhr8Ojrf9MAHaWesd/rYhnyd+iuzx4VPyZ3GFaIPNo=
 github.com/iamolegga/lemonsqueezy-go v0.0.0-20260208170847-671194e9e163 h1:tQ9LABfaYAZG6J5mKdvssUPfuUL2/Sxw+pq/j5HiaS4=
 github.com/iamolegga/lemonsqueezy-go v0.0.0-20260208170847-671194e9e163/go.mod h1:/6JnFNBfarfVh7vY8FyHoOUaj6USRxo0QEOy7iGrLxE=
 github.com/iamolegga/valmid v0.1.0 h1:5cIC0/4DNDSn+yGL3Zm8K+tE3Epn66xxEWMj59lgRXY=
@@ -309,8 +311,6 @@ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gotest.tools/v3 v3.5.2 h1:7koQfIKdy+I8UTetycgUqXWSDwpgv193Ka+qRsmBY8Q=
 gotest.tools/v3 v3.5.2/go.mod h1:LtdLGcnqToBH83WByAAi/wiwSFCArdFIUV/xxN4pcjA=
-maragu.dev/goqite v0.3.2-0.20251120080437-471f9d49ce35 h1:MzixZoZLiByCIxtom9CtPPn13VBW2u8CLTSPz0fC4ig=
-maragu.dev/goqite v0.3.2-0.20251120080437-471f9d49ce35/go.mod h1:UVHAW44gJFtP2nucAO7R2NBzveM6HrJO97CAa12uuVc=
 maragu.dev/is v0.3.0 h1:A2B6ylehcHJw7gQqzgwDMWMkS6jmhaBu8s6fy+RG6yA=
 maragu.dev/is v0.3.0/go.mod h1:bviaM5S0fBshCw7wuumFGTju/izopZ/Yvq4g7Klc7y8=
 modernc.org/cc/v4 v4.27.1 h1:9W30zRlYrefrDV2JE2O8VDtJ1yPGownxciz5rrbQZis=

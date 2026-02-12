@@ -15,10 +15,10 @@ func newSQLiteRepo(t *testing.T) *subscriptions.Repo {
 
 	dsn := filepath.Join(t.TempDir(), "test.db")
 
-	err := db.Migrate("sqlite", dsn)
+	err := db.Migrate("sqlite", dsn, "")
 	require.NoError(t, err, "sqlite migration failed")
 
-	database, err := db.New("sqlite", dsn)
+	database, err := db.New("sqlite", dsn, "")
 	require.NoError(t, err, "sqlite connection failed")
 
 	t.Cleanup(func() { database.Close() })

@@ -37,29 +37,29 @@ type PlansResponse struct {
 }
 
 type Plan struct {
-	ID          string    `json:"id" description:"Plan identifier"`
-	Name        string    `json:"name" description:"Plan display name"`
+	ID          string    `json:"id"                    description:"Plan identifier"`
+	Name        string    `json:"name"                  description:"Plan display name"`
 	Description string    `json:"description,omitempty" description:"Plan description"`
-	Features    []Feature `json:"features,omitempty" description:"Features included in this plan"`
-	Variants    []Variant `json:"variants,omitempty" description:"Pricing variants for this plan"`
+	Features    []Feature `json:"features,omitempty"    description:"Features included in this plan"`
+	Variants    []Variant `json:"variants,omitempty"    description:"Pricing variants for this plan"`
 }
 
 type Feature struct {
-	ID          string `json:"id" description:"Feature identifier"`
-	Name        string `json:"name" description:"Feature display name"`
+	ID          string `json:"id"                    description:"Feature identifier"`
+	Name        string `json:"name"                  description:"Feature display name"`
 	Description string `json:"description,omitempty" description:"Feature description"`
 }
 
 type Variant struct {
-	ID                 int    `json:"id" description:"Variant identifier"`
-	Name               string `json:"name" description:"Variant display name"`
-	Price              any    `json:"price" description:"Price in cents"`
-	Interval           string `json:"interval" description:"Billing interval (month, year, etc.)"`
-	IntervalCount      int    `json:"interval_count" description:"Number of intervals between billings"`
-	HasFreeTrial       bool   `json:"has_free_trial" description:"Whether this variant has a free trial"`
-	TrialInterval      string `json:"trial_interval,omitempty" description:"Trial billing interval"`
+	ID                 int    `json:"id"                             description:"Variant identifier"`
+	Name               string `json:"name"                           description:"Variant display name"`
+	Price              any    `json:"price"                          description:"Price in cents"`
+	Interval           string `json:"interval"                       description:"Billing interval (month, year, etc.)"`
+	IntervalCount      int    `json:"interval_count"                 description:"Number of intervals between billings"`
+	HasFreeTrial       bool   `json:"has_free_trial"                 description:"Whether this variant has a free trial"`
+	TrialInterval      string `json:"trial_interval,omitempty"       description:"Trial billing interval"`
 	TrialIntervalCount int    `json:"trial_interval_count,omitempty" description:"Trial duration in intervals"`
-	Sort               int    `json:"sort" description:"Display order"`
+	Sort               int    `json:"sort"                           description:"Display order"`
 }
 
 type RoutePlans struct {
@@ -91,7 +91,9 @@ func RegisterPlansSchema(r *openapi3.Reflector) {
 	})
 	oa.AddErrorResponses(op)
 	op.SetSummary("List all plans")
-	op.SetDescription("Get all available subscription plans with their pricing variants. Use ?expand=features to include features.")
+	op.SetDescription(
+		"Get all available subscription plans with their pricing variants. Use ?expand=features to include features.",
+	)
 	op.SetTags("Plans")
 	op.AddSecurity("ApiKeyAuth")
 	r.AddOperation(op)
@@ -159,4 +161,3 @@ func ToPlanSummary(plan config.PlanConfig, variants []Variant) Plan {
 		Variants:    variants,
 	}
 }
-

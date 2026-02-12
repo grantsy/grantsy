@@ -35,7 +35,11 @@ func testProducts() []config.ProductMapping {
 	}
 }
 
-func newTestService(t *testing.T, loader entitlements.SubscriptionLoader, notifier entitlements.PlanUpdateNotifier) *entitlements.Service {
+func newTestService(
+	t *testing.T,
+	loader entitlements.SubscriptionLoader,
+	notifier entitlements.PlanUpdateNotifier,
+) *entitlements.Service {
 	t.Helper()
 	svc, err := entitlements.NewService(testEntitlementsConfig(), testProducts(), loader, notifier)
 	require.NoError(t, err)

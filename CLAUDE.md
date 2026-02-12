@@ -140,6 +140,7 @@ server:
 database:
   driver: sqlite    # or postgres
   dsn: grantsy.db
+  namespace: grantsy  # optional: isolates tables (PG schema / SQLite prefix)
 
 entitlements:
   default_plan: free
@@ -256,7 +257,7 @@ modernc.org/sqlite
 github.com/jackc/pgx/v5
 gopkg.in/yaml.v3
 github.com/go-playground/validator/v10
-maragu.dev/goqite
+github.com/iamolegga/goqite
 github.com/standard-webhooks/standard-webhooks/libraries
 ```
 

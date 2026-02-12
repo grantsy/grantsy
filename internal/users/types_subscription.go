@@ -19,7 +19,7 @@ type UserSubscription struct {
 // RawSubscription wraps provider-specific subscription data with a provider identifier.
 type RawSubscription struct {
 	Provider string               `json:"provider" enum:"lemonsqueezy" description:"Provider identifier"`
-	Data     ProviderSubscription `json:"data"     description:"Provider-specific subscription data"`
+	Data     ProviderSubscription `json:"data"                         description:"Provider-specific subscription data"`
 }
 
 // ProviderSubscription wraps provider-specific subscription data.

@@ -29,8 +29,8 @@ const (
 )
 
 type PlanRequest struct {
-	PlanID string       `in:"path=plan_id" path:"plan_id" validate:"required" description:"Plan ID to look up"`
-	Expand []PlanExpand `in:"query=expand" query:"expand" validate:"dive,oneof=features" description:"Fields to expand (use ?expand=features)"`
+	PlanID string       `in:"path=plan_id" path:"plan_id" validate:"required"            description:"Plan ID to look up"`
+	Expand []PlanExpand `in:"query=expand"                validate:"dive,oneof=features" description:"Fields to expand (use ?expand=features)" query:"expand"`
 }
 
 type PlanResponse struct {
@@ -66,7 +66,9 @@ func RegisterPlanSchema(r *openapi3.Reflector) {
 	})
 	oa.AddErrorResponses(op)
 	op.SetSummary("Get plan by ID")
-	op.SetDescription("Get details of a specific plan by its identifier. Use ?expand=features to include feature details.")
+	op.SetDescription(
+		"Get details of a specific plan by its identifier. Use ?expand=features to include feature details.",
+	)
 	op.SetTags("Plans")
 	op.AddSecurity("ApiKeyAuth")
 	r.AddOperation(op)

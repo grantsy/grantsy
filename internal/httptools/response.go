@@ -34,7 +34,7 @@ type ErrorResponse struct {
 }
 
 type ProblemDetails struct {
-	Type      string       `json:"type" enum:"https://grantsy.example/errors/validation-failed,https://grantsy.example/errors/bad-request,https://grantsy.example/errors/not-found,https://grantsy.example/errors/unauthorized,https://grantsy.example/errors/internal-error"`
+	Type      string       `json:"type"             enum:"https://grantsy.example/errors/validation-failed,https://grantsy.example/errors/bad-request,https://grantsy.example/errors/not-found,https://grantsy.example/errors/unauthorized,https://grantsy.example/errors/internal-error"`
 	Title     string       `json:"title"`
 	Detail    string       `json:"detail"`
 	Status    int          `json:"status"`
