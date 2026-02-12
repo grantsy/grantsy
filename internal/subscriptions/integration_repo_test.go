@@ -186,21 +186,6 @@ func TestRepoIntegration(t *testing.T) {
 					assert.Equal(t, map[string]int{"user-1": 12345}, plans)
 				})
 
-				t.Run("cancelled_with_past_ends_at", func(t *testing.T) {
-					repo := drv.newDB(t)
-					ctx := context.Background()
-
-					past := time.Now().Add(-24 * time.Hour).Unix()
-					sub := testSub(1, "user-1", "cancelled")
-					sub.EndsAt = &past
-					err := repo.UpsertSubscription(ctx, sub)
-					require.NoError(t, err)
-
-					plans, err := repo.GetActiveUserPlans(ctx)
-					require.NoError(t, err)
-					assert.Empty(t, plans)
-				})
-
 				t.Run("expired_subscription_excluded", func(t *testing.T) {
 					repo := drv.newDB(t)
 					ctx := context.Background()

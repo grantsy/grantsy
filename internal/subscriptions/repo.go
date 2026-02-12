@@ -3,7 +3,6 @@ package subscriptions
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/grantsy/grantsy/internal/infra/db"
 )
@@ -33,14 +32,12 @@ type Subscription struct {
 
 // IsActive returns true if the subscription grants access.
 func (s *Subscription) IsActive() bool {
-	if s.Status == "active" || s.Status == "on_trial" {
+	switch s.Status {
+	case "on_trial", "active", "past_due", "cancelled":
 		return true
+	default:
+		return false
 	}
-	// Cancelled subscriptions are active until ends_at
-	if s.Status == "cancelled" && s.EndsAt != nil && *s.EndsAt > time.Now().Unix() {
-		return true
-	}
-	return false
 }
 
 type Repo struct {
@@ -51,7 +48,10 @@ func NewRepo(database *db.DB) *Repo {
 	return &Repo{db: database}
 }
 
-func (r *Repo) UpsertSubscription(ctx context.Context, sub *Subscription) error {
+func (r *Repo) UpsertSubscription(
+	ctx context.Context,
+	sub *Subscription,
+) error {
 	query := r.db.Rebind(`
 		INSERT INTO subscriptions_lemonsqueezy (
 			id, user_id, customer_id, order_id, product_id, product_name,
@@ -81,12 +81,29 @@ func (r *Repo) UpsertSubscription(ctx context.Context, sub *Subscription) error 
 			updated_at = excluded.updated_at
 	`)
 
-	_, err := r.db.ExecContext(ctx, query,
-		sub.ID, sub.UserID, sub.CustomerID, sub.OrderID, sub.ProductID, sub.ProductName,
-		sub.VariantID, sub.VariantName, sub.Status, sub.StatusFormatted,
-		sub.CardBrand, sub.CardLastFour, sub.Cancelled, sub.TrialEndsAt,
-		sub.BillingAnchor, sub.SubscriptionItemID, sub.RenewsAt, sub.EndsAt,
-		sub.CreatedAt, sub.UpdatedAt,
+	_, err := r.db.ExecContext(
+		ctx,
+		query,
+		sub.ID,
+		sub.UserID,
+		sub.CustomerID,
+		sub.OrderID,
+		sub.ProductID,
+		sub.ProductName,
+		sub.VariantID,
+		sub.VariantName,
+		sub.Status,
+		sub.StatusFormatted,
+		sub.CardBrand,
+		sub.CardLastFour,
+		sub.Cancelled,
+		sub.TrialEndsAt,
+		sub.BillingAnchor,
+		sub.SubscriptionItemID,
+		sub.RenewsAt,
+		sub.EndsAt,
+		sub.CreatedAt,
+		sub.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("billing: failed to upsert subscription: %w", err)
@@ -95,7 +112,10 @@ func (r *Repo) UpsertSubscription(ctx context.Context, sub *Subscription) error 
 	return nil
 }
 
-func (r *Repo) GetSubscriptionByUserID(ctx context.Context, userID string) (*Subscription, error) {
+func (r *Repo) GetSubscriptionByUserID(
+	ctx context.Context,
+	userID string,
+) (*Subscription, error) {
 	query := r.db.Rebind(`
 		SELECT id, user_id, customer_id, order_id, product_id, product_name,
 			variant_id, variant_name, status, status_formatted,
@@ -122,20 +142,19 @@ func (r *Repo) GetSubscriptionByUserID(ctx context.Context, userID string) (*Sub
 }
 
 func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
-	now := time.Now().Unix()
-	query := r.db.Rebind(`
+	query := `
 		SELECT user_id, product_id
 		FROM subscriptions_lemonsqueezy
 		WHERE product_id IS NOT NULL
-		  AND (
-		    status IN ('active', 'on_trial')
-		    OR (status = 'cancelled' AND ends_at > $1)
-		  )
-	`)
+		  AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
+	`
 
-	rows, err := r.db.QueryContext(ctx, query, now)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("subscriptions: failed to query active user plans: %w", err)
+		return nil, fmt.Errorf(
+			"subscriptions: failed to query active user plans: %w",
+			err,
+		)
 	}
 	defer rows.Close()
 

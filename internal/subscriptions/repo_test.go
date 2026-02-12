@@ -2,7 +2,6 @@ package subscriptions_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -19,21 +18,9 @@ func TestSubscription_IsActive_OnTrial(t *testing.T) {
 	assert.True(t, sub.IsActive())
 }
 
-func TestSubscription_IsActive_CancelledFutureEnd(t *testing.T) {
-	future := time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
-	sub := &subscriptions.Subscription{Status: "cancelled", EndsAt: &future}
+func TestSubscription_IsActive_Cancelled(t *testing.T) {
+	sub := &subscriptions.Subscription{Status: "cancelled"}
 	assert.True(t, sub.IsActive())
-}
-
-func TestSubscription_IsActive_CancelledPastEnd(t *testing.T) {
-	past := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
-	sub := &subscriptions.Subscription{Status: "cancelled", EndsAt: &past}
-	assert.False(t, sub.IsActive())
-}
-
-func TestSubscription_IsActive_CancelledNilEnd(t *testing.T) {
-	sub := &subscriptions.Subscription{Status: "cancelled", EndsAt: nil}
-	assert.False(t, sub.IsActive())
 }
 
 func TestSubscription_IsActive_Expired(t *testing.T) {
@@ -48,5 +35,5 @@ func TestSubscription_IsActive_Paused(t *testing.T) {
 
 func TestSubscription_IsActive_PastDue(t *testing.T) {
 	sub := &subscriptions.Subscription{Status: "past_due"}
-	assert.False(t, sub.IsActive())
+	assert.True(t, sub.IsActive())
 }
