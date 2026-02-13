@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/iamolegga/lemonsqueezy-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	"github.com/grantsy/grantsy/internal/infra/logger"
@@ -58,7 +58,7 @@ func NewRouteWebhook(
 	}
 }
 
-func (route *RouteWebhook) Register(mux *http.ServeMux, _ *openapi3.Reflector) {
+func (route *RouteWebhook) Register(mux *http.ServeMux, _ *openapi31.Reflector) {
 	mux.Handle("POST /v1/webhook/lemonsqueezy", route.Handler())
 	// Webhook intentionally excluded from OpenAPI documentation
 }

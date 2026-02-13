@@ -6,7 +6,7 @@ import (
 
 	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	oa "github.com/grantsy/grantsy/internal/openapi"
@@ -17,7 +17,7 @@ type FeatureRequest struct {
 }
 
 type FeatureResponse struct {
-	Feature Feature `json:"feature" description:"Feature details"`
+	Feature Feature `json:"feature" description:"Feature details" required:"true"`
 }
 
 type RouteFeature struct {
@@ -28,14 +28,14 @@ func NewRouteFeature(service *Service) *RouteFeature {
 	return &RouteFeature{service: service}
 }
 
-func (route *RouteFeature) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *RouteFeature) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.Handle("GET /v1/features/{feature_id}",
 		valmid.Middleware[FeatureRequest]()(route.Handler()),
 	)
 	RegisterFeatureSchema(r)
 }
 
-func RegisterFeatureSchema(r *openapi3.Reflector) {
+func RegisterFeatureSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/features/{feature_id}")
 	op.AddReqStructure(new(FeatureRequest))
 	op.AddRespStructure(struct {

@@ -5,8 +5,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 )
@@ -18,8 +19,8 @@ type WrappedResponse[T any] struct {
 }
 
 // NewReflector creates a configured OpenAPI reflector with API info and security.
-func NewReflector() *openapi3.Reflector {
-	r := openapi3.NewReflector()
+func NewReflector() *openapi31.Reflector {
+	r := openapi31.NewReflector()
 	r.Spec.Info.
 		WithTitle("Grantsy Entitlements API").
 		WithVersion("1.0.0").
@@ -30,6 +31,13 @@ func NewReflector() *openapi3.Reflector {
 		"X-Api-Key",
 		"header",
 		"API key for authentication",
+	)
+
+	// Wrap nullable $ref fields in anyOf instead of injecting null into shared definitions.
+	r.DefaultOptions = append(r.DefaultOptions,
+		func(rc *jsonschema.ReflectContext) {
+			rc.EnvelopNullability = true
+		},
 	)
 
 	// Strip package prefix from schema names (e.g., "EntitlementsCheckResult" -> "CheckResult")
@@ -44,9 +52,11 @@ func NewReflector() *openapi3.Reflector {
 			}
 			for _, prefix := range prefixes {
 				if after, ok := strings.CutPrefix(defaultDefName, prefix); ok {
-					return after
+					defaultDefName = after
+					break
 				}
 			}
+			defaultDefName = strings.TrimSuffix(defaultDefName, "Schema")
 			return defaultDefName
 		})
 

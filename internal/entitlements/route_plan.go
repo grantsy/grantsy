@@ -7,7 +7,7 @@ import (
 
 	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	oa "github.com/grantsy/grantsy/internal/openapi"
@@ -46,20 +46,20 @@ func NewRoutePlan(service *Service, pricing PricingProvider) *RoutePlan {
 	return &RoutePlan{service: service, pricing: pricing}
 }
 
-func (route *RoutePlan) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *RoutePlan) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.Handle("GET /v1/plans/{plan_id}",
 		valmid.Middleware[PlanRequest]()(route.Handler()),
 	)
 	RegisterPlanSchema(r)
 }
 
-func RegisterPlanSchema(r *openapi3.Reflector) {
+func RegisterPlanSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/plans/{plan_id}")
 	op.AddReqStructure(new(PlanRequest))
 	op.AddRespStructure(struct {
-		Data PlanResponse   `json:"data"`
-		Meta httptools.Meta `json:"meta"`
-		_    struct{}       `title:"PlanResponse"`
+		Data planResponseSchema `json:"data"`
+		Meta httptools.Meta     `json:"meta"`
+		_    struct{}           `title:"PlanResponse"`
 	}{}, func(cu *openapi.ContentUnit) {
 		cu.HTTPStatus = http.StatusOK
 		cu.Description = "Plan details"

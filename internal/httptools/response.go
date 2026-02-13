@@ -24,27 +24,27 @@ type Response struct {
 }
 
 type Meta struct {
-	RequestID string `json:"request_id"`
-	Timestamp string `json:"timestamp"`
-	Version   string `json:"version"`
+	RequestID string `json:"request_id" required:"true"`
+	Timestamp string `json:"timestamp"  required:"true"`
+	Version   string `json:"version"    required:"true"`
 }
 
 type ErrorResponse struct {
-	Error ProblemDetails `json:"error"`
+	Error ProblemDetails `json:"error" required:"true"`
 }
 
 type ProblemDetails struct {
-	Type      string       `json:"type"             enum:"https://grantsy.example/errors/validation-failed,https://grantsy.example/errors/bad-request,https://grantsy.example/errors/not-found,https://grantsy.example/errors/unauthorized,https://grantsy.example/errors/internal-error"`
-	Title     string       `json:"title"`
-	Detail    string       `json:"detail"`
-	Status    int          `json:"status"`
-	RequestID string       `json:"request_id"`
+	Type      string       `json:"type"             enum:"https://grantsy.example/errors/validation-failed,https://grantsy.example/errors/bad-request,https://grantsy.example/errors/not-found,https://grantsy.example/errors/unauthorized,https://grantsy.example/errors/internal-error" required:"true"`
+	Title     string       `json:"title"       required:"true"`
+	Detail    string       `json:"detail"      required:"true"`
+	Status    int          `json:"status"      required:"true"`
+	RequestID string       `json:"request_id"  required:"true"`
 	Fields    []FieldError `json:"fields,omitempty"`
 }
 
 type FieldError struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
+	Field   string `json:"field"   required:"true"`
+	Message string `json:"message" required:"true"`
 }
 
 func JSON(w http.ResponseWriter, r *http.Request, status int, data any) {

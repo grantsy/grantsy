@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	oa "github.com/grantsy/grantsy/internal/openapi"
 )
 
 type FeaturesResponse struct {
-	Features []Feature `json:"features" description:"All available features"`
+	Features []Feature `json:"features" description:"All available features" nullable:"false" required:"true"`
 }
 
 type RouteFeatures struct {
@@ -22,12 +22,12 @@ func NewRouteFeatures(service *Service) *RouteFeatures {
 	return &RouteFeatures{service: service}
 }
 
-func (route *RouteFeatures) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *RouteFeatures) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.Handle("GET /v1/features", route.Handler())
 	RegisterFeaturesSchema(r)
 }
 
-func RegisterFeaturesSchema(r *openapi3.Reflector) {
+func RegisterFeaturesSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/features")
 	op.AddRespStructure(struct {
 		Data FeaturesResponse `json:"data"`

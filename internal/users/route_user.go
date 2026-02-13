@@ -7,7 +7,7 @@ import (
 
 	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/entitlements"
 	"github.com/grantsy/grantsy/internal/httptools"
@@ -53,11 +53,20 @@ type UserRequest struct {
 }
 
 type UserResponse struct {
-	UserID       string                 `json:"user_id"                description:"The user ID"`
-	PlanID       string                 `json:"plan_id"                description:"The user's current plan ID"`
-	Plan         *entitlements.Plan     `json:"plan,omitempty"         description:"Plan details (requires expand=plan)"`
-	Features     []entitlements.Feature `json:"features,omitempty"     description:"Features available to the user (requires expand=features)"`
-	Subscription *UserSubscription      `json:"subscription,omitempty" description:"Subscription details (requires expand=subscription)"`
+	UserID       string                                      `json:"user_id"              description:"The user ID"`
+	PlanID       string                                      `json:"plan_id"              description:"The user's current plan ID"`
+	Plan         httptools.Expandable[entitlements.Plan]      `json:"plan,omitzero"        description:"Plan details (requires expand=plan)"`
+	Features     httptools.Expandable[[]entitlements.Feature] `json:"features,omitzero"    description:"Features available to the user (requires expand=features)"`
+	Subscription httptools.Expandable[UserSubscription]       `json:"subscription,omitzero" description:"Subscription details (requires expand=subscription)"`
+}
+
+// userResponseSchema mirrors UserResponse for OpenAPI spec generation with nullable fields.
+type userResponseSchema struct {
+	UserID       string                  `json:"user_id"       description:"The user ID"                                                                  required:"true"`
+	PlanID       string                  `json:"plan_id"       description:"The user's current plan ID"                                                    required:"true"`
+	Plan         *entitlements.PlanSchema `json:"plan"          description:"Plan details (requires expand=plan)"`
+	Features     []entitlements.Feature  `json:"features"      description:"Features available to the user (requires expand=features)" nullable:"true"`
+	Subscription *UserSubscription       `json:"subscription"  description:"Subscription details (requires expand=subscription)"`
 }
 
 type RouteUser struct {
@@ -69,20 +78,20 @@ func NewRouteUser(entService EntitlementService, subRepo SubscriptionRepo) *Rout
 	return &RouteUser{entService: entService, subRepo: subRepo}
 }
 
-func (route *RouteUser) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *RouteUser) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.Handle("GET /v1/users/{user_id}",
 		valmid.Middleware[UserRequest]()(route.Handler()),
 	)
 	RegisterUserSchema(r)
 }
 
-func RegisterUserSchema(r *openapi3.Reflector) {
+func RegisterUserSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/users/{user_id}")
 	op.AddReqStructure(new(UserRequest))
 	op.AddRespStructure(struct {
-		Data UserResponse   `json:"data"`
-		Meta httptools.Meta `json:"meta"`
-		_    struct{}       `title:"UserResponse"`
+		Data userResponseSchema `json:"data"`
+		Meta httptools.Meta     `json:"meta"`
+		_    struct{}           `title:"UserResponse"`
 	}{}, func(cu *openapi.ContentUnit) {
 		cu.HTTPStatus = http.StatusOK
 		cu.Description = "User state"
@@ -110,11 +119,9 @@ func (route *RouteUser) Handler() http.Handler {
 
 		if slices.Contains(input.Expand, UserExpandPlan) {
 			if p := route.entService.GetPlan(planID); p != nil {
-				plan := entitlements.ToPlanSummary(*p, nil)
-				resp.Plan = &plan
+				resp.Plan = httptools.Set(entitlements.ToPlanSummary(*p, nil))
 			} else {
-				plan := entitlements.Plan{ID: planID}
-				resp.Plan = &plan
+				resp.Plan = httptools.Set(entitlements.Plan{ID: planID})
 			}
 		}
 
@@ -128,7 +135,7 @@ func (route *RouteUser) Handler() http.Handler {
 					featureDTOs = append(featureDTOs, entitlements.Feature{ID: fID})
 				}
 			}
-			resp.Features = featureDTOs
+			resp.Features = httptools.Set(featureDTOs)
 		}
 
 		if slices.Contains(input.Expand, UserExpandSubscription) {
@@ -140,7 +147,9 @@ func (route *RouteUser) Handler() http.Handler {
 				return
 			}
 			if sub != nil {
-				resp.Subscription = ToUserSubscription(sub)
+				resp.Subscription = httptools.Set(*ToUserSubscription(sub))
+			} else {
+				resp.Subscription = httptools.Null[UserSubscription]()
 			}
 		}
 

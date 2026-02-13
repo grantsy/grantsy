@@ -6,7 +6,7 @@ import (
 
 	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	"github.com/grantsy/grantsy/internal/infra/metrics"
@@ -37,11 +37,20 @@ type CheckRequest struct {
 }
 
 type CheckResponse struct {
-	Allowed bool        `json:"allowed"           description:"Whether the user has access to this feature"`
-	UserID  string      `json:"user_id"           description:"The user ID"`
-	Reason  CheckReason `json:"reason"            description:"Reason for the access decision"                                         enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan"`
-	Feature *Feature    `json:"feature,omitempty" description:"The checked feature (requires expand=feature)"`
-	Plan    *Plan       `json:"plan,omitempty"    description:"The user's current plan (requires expand=plan or expand=plan.features)"`
+	Allowed bool                      `json:"allowed"          description:"Whether the user has access to this feature"`
+	UserID  string                    `json:"user_id"          description:"The user ID"`
+	Reason  CheckReason               `json:"reason"           description:"Reason for the access decision"                                         enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan"`
+	Feature httptools.Expandable[Feature] `json:"feature,omitzero" description:"The checked feature (requires expand=feature)"`
+	Plan    httptools.Expandable[Plan]    `json:"plan,omitzero"    description:"The user's current plan (requires expand=plan or expand=plan.features)"`
+}
+
+// checkResponseSchema mirrors CheckResponse for OpenAPI spec generation with nullable fields.
+type checkResponseSchema struct {
+	Allowed bool        `json:"allowed"  description:"Whether the user has access to this feature"                                         required:"true"`
+	UserID  string      `json:"user_id"  description:"The user ID"                                                                         required:"true"`
+	Reason  CheckReason `json:"reason"   description:"Reason for the access decision" enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan" required:"true"`
+	Feature *Feature    `json:"feature"  description:"The checked feature (requires expand=feature)"`
+	Plan    *PlanSchema `json:"plan"     description:"The user's current plan (requires expand=plan or expand=plan.features)"`
 }
 
 type RouteCheck struct {
@@ -52,20 +61,20 @@ func NewRouteCheck(service *Service) *RouteCheck {
 	return &RouteCheck{service: service}
 }
 
-func (route *RouteCheck) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *RouteCheck) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.Handle("GET /v1/check",
 		valmid.Middleware[CheckRequest]()(route.Handler()),
 	)
 	RegisterCheckSchema(r)
 }
 
-func RegisterCheckSchema(r *openapi3.Reflector) {
+func RegisterCheckSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/check")
 	op.AddReqStructure(new(CheckRequest))
 	op.AddRespStructure(struct {
-		Data CheckResponse  `json:"data"`
-		Meta httptools.Meta `json:"meta"`
-		_    struct{}       `title:"CheckResponse"`
+		Data checkResponseSchema `json:"data"`
+		Meta httptools.Meta      `json:"meta"`
+		_    struct{}            `title:"CheckResponse"`
 	}{}, func(cu *openapi.ContentUnit) {
 		cu.HTTPStatus = http.StatusOK
 		cu.Description = "Feature access check result"
@@ -94,32 +103,26 @@ func (route *RouteCheck) Handler() http.Handler {
 		}
 
 		if slices.Contains(input.Expand, CheckExpandFeature) {
-			var featureDTO Feature
 			if f := route.service.GetFeature(result.FeatureID); f != nil {
-				featureDTO = ToFeature(*f)
+				resp.Feature = httptools.Set(ToFeature(*f))
 			} else {
-				featureDTO = Feature{ID: result.FeatureID}
+				resp.Feature = httptools.Set(Feature{ID: result.FeatureID})
 			}
-			resp.Feature = &featureDTO
 		}
 
 		if slices.Contains(input.Expand, CheckExpandPlanFeatures) {
 			features := route.service.GetFeatures()
-			var planDTO Plan
 			if p := route.service.GetPlan(result.PlanID); p != nil {
-				planDTO = ToPlan(*p, features, nil)
+				resp.Plan = httptools.Set(ToPlan(*p, features, nil))
 			} else {
-				planDTO = Plan{ID: result.PlanID}
+				resp.Plan = httptools.Set(Plan{ID: result.PlanID})
 			}
-			resp.Plan = &planDTO
 		} else if slices.Contains(input.Expand, CheckExpandPlan) {
-			var planDTO Plan
 			if p := route.service.GetPlan(result.PlanID); p != nil {
-				planDTO = ToPlanSummary(*p, nil)
+				resp.Plan = httptools.Set(ToPlanSummary(*p, nil))
 			} else {
-				planDTO = Plan{ID: result.PlanID}
+				resp.Plan = httptools.Set(Plan{ID: result.PlanID})
 			}
-			resp.Plan = &planDTO
 		}
 
 		httptools.JSON(w, r, http.StatusOK, resp)

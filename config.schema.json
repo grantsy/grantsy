@@ -70,6 +70,10 @@
                 "type": "string",
                 "description": "Display name"
               },
+              "description": {
+                "type": "string",
+                "description": "Plan description"
+              },
               "features": {
                 "type": "array",
                 "items": {

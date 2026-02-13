@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 )
 
 type Route struct {
-	reflector *openapi3.Reflector
+	reflector *openapi31.Reflector
 }
 
-func NewRoute(reflector *openapi3.Reflector) *Route {
+func NewRoute(reflector *openapi31.Reflector) *Route {
 	return &Route{reflector: reflector}
 }
 
-func (route *Route) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *Route) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.HandleFunc("GET /openapi.json", route.serveJSON)
 	mux.HandleFunc("GET /docs", route.serveUI)
 }

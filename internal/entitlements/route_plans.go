@@ -6,12 +6,29 @@ import (
 
 	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	"github.com/grantsy/grantsy/internal/infra/config"
 	oa "github.com/grantsy/grantsy/internal/openapi"
 )
+
+// PlanSchema mirrors Plan for OpenAPI spec generation with nullable features.
+type PlanSchema struct {
+	ID          string    `json:"id"                    description:"Plan identifier"                required:"true"`
+	Name        string    `json:"name"                  description:"Plan display name"              required:"true"`
+	Description string    `json:"description,omitempty" description:"Plan description"`
+	Features    []Feature `json:"features"              description:"Features included in this plan"  nullable:"true"`
+	Variants    []Variant `json:"variants,omitempty"    description:"Pricing variants for this plan"`
+}
+
+type plansResponseSchema struct {
+	Plans []PlanSchema `json:"plans" description:"List of available plans" nullable:"false" required:"true"`
+}
+
+type planResponseSchema struct {
+	Plan PlanSchema `json:"plan" description:"Plan details" required:"true"`
+}
 
 type PlansExpand string
 
@@ -37,29 +54,29 @@ type PlansResponse struct {
 }
 
 type Plan struct {
-	ID          string    `json:"id"                    description:"Plan identifier"`
-	Name        string    `json:"name"                  description:"Plan display name"`
-	Description string    `json:"description,omitempty" description:"Plan description"`
-	Features    []Feature `json:"features,omitempty"    description:"Features included in this plan"`
-	Variants    []Variant `json:"variants,omitempty"    description:"Pricing variants for this plan"`
+	ID          string                         `json:"id"                    description:"Plan identifier"`
+	Name        string                         `json:"name"                  description:"Plan display name"`
+	Description string                         `json:"description,omitempty" description:"Plan description"`
+	Features    httptools.Expandable[[]Feature] `json:"features,omitzero"    description:"Features included in this plan"`
+	Variants    []Variant                      `json:"variants,omitempty"    description:"Pricing variants for this plan"`
 }
 
 type Feature struct {
-	ID          string `json:"id"                    description:"Feature identifier"`
-	Name        string `json:"name"                  description:"Feature display name"`
+	ID          string `json:"id"                    description:"Feature identifier"   required:"true"`
+	Name        string `json:"name"                  description:"Feature display name" required:"true"`
 	Description string `json:"description,omitempty" description:"Feature description"`
 }
 
 type Variant struct {
-	ID                 int    `json:"id"                             description:"Variant identifier"`
-	Name               string `json:"name"                           description:"Variant display name"`
-	Price              any    `json:"price"                          description:"Price in cents"`
-	Interval           string `json:"interval"                       description:"Billing interval (month, year, etc.)"`
-	IntervalCount      int    `json:"interval_count"                 description:"Number of intervals between billings"`
-	HasFreeTrial       bool   `json:"has_free_trial"                 description:"Whether this variant has a free trial"`
+	ID                 int    `json:"id"                             description:"Variant identifier"                    required:"true"`
+	Name               string `json:"name"                           description:"Variant display name"                  required:"true"`
+	Price              any    `json:"price"                          description:"Price in cents"                         required:"true"`
+	Interval           string `json:"interval"                       description:"Billing interval (month, year, etc.)"  required:"true"`
+	IntervalCount      int    `json:"interval_count"                 description:"Number of intervals between billings"  required:"true"`
+	HasFreeTrial       bool   `json:"has_free_trial"                 description:"Whether this variant has a free trial"  required:"true"`
 	TrialInterval      string `json:"trial_interval,omitempty"       description:"Trial billing interval"`
 	TrialIntervalCount int    `json:"trial_interval_count,omitempty" description:"Trial duration in intervals"`
-	Sort               int    `json:"sort"                           description:"Display order"`
+	Sort               int    `json:"sort"                           description:"Display order"                          required:"true"`
 }
 
 type RoutePlans struct {
@@ -71,20 +88,20 @@ func NewRoutePlans(service *Service, pricing PricingProvider) *RoutePlans {
 	return &RoutePlans{service: service, pricing: pricing}
 }
 
-func (route *RoutePlans) Register(mux *http.ServeMux, r *openapi3.Reflector) {
+func (route *RoutePlans) Register(mux *http.ServeMux, r *openapi31.Reflector) {
 	mux.Handle("GET /v1/plans",
 		valmid.Middleware[PlansRequest]()(route.Handler()),
 	)
 	RegisterPlansSchema(r)
 }
 
-func RegisterPlansSchema(r *openapi3.Reflector) {
+func RegisterPlansSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/plans")
 	op.AddReqStructure(new(PlansRequest))
 	op.AddRespStructure(struct {
-		Data PlansResponse  `json:"data"`
-		Meta httptools.Meta `json:"meta"`
-		_    struct{}       `title:"PlansResponse"`
+		Data plansResponseSchema `json:"data"`
+		Meta httptools.Meta      `json:"meta"`
+		_    struct{}            `title:"PlansResponse"`
 	}{}, func(cu *openapi.ContentUnit) {
 		cu.HTTPStatus = http.StatusOK
 		cu.Description = "List of available plans"
@@ -147,7 +164,7 @@ func ToPlan(plan config.PlanConfig, allFeatures []config.FeatureConfig, variants
 		ID:          plan.ID,
 		Name:        plan.Name,
 		Description: plan.Description,
-		Features:    features,
+		Features:    httptools.Set(features),
 		Variants:    variants,
 	}
 }

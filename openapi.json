@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
     "title": "Grantsy Entitlements API",
     "description": "Microservice for managing SaaS feature entitlements",
@@ -19,8 +19,8 @@
             "in": "query",
             "description": "User ID to check access for",
             "schema": {
-              "type": "string",
-              "description": "User ID to check access for"
+              "description": "User ID to check access for",
+              "type": "string"
             }
           },
           {
@@ -28,8 +28,8 @@
             "in": "query",
             "description": "Feature ID to check access for",
             "schema": {
-              "type": "string",
-              "description": "Feature ID to check access for"
+              "description": "Feature ID to check access for",
+              "type": "string"
             }
           },
           {
@@ -37,11 +37,14 @@
             "in": "query",
             "description": "Fields to expand (use ?expand=feature\u0026expand=plan\u0026expand=plan.features)",
             "schema": {
-              "type": "array",
+              "description": "Fields to expand (use ?expand=feature\u0026expand=plan\u0026expand=plan.features)",
               "items": {
                 "$ref": "#/components/schemas/CheckExpand"
               },
-              "description": "Fields to expand (use ?expand=feature\u0026expand=plan\u0026expand=plan.features)"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           }
         ],
@@ -51,8 +54,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "CheckResponse",
-                  "type": "object",
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/CheckResponse"
@@ -60,7 +61,9 @@
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
                     }
-                  }
+                  },
+                  "title": "CheckResponse",
+                  "type": "object"
                 }
               }
             }
@@ -126,8 +129,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "FeaturesResponse",
-                  "type": "object",
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/FeaturesResponse"
@@ -135,7 +136,9 @@
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
                     }
-                  }
+                  },
+                  "title": "FeaturesResponse",
+                  "type": "object"
                 }
               }
             }
@@ -202,8 +205,8 @@
             "description": "Feature ID to look up",
             "required": true,
             "schema": {
-              "type": "string",
-              "description": "Feature ID to look up"
+              "description": "Feature ID to look up",
+              "type": "string"
             }
           }
         ],
@@ -213,8 +216,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "FeatureResponse",
-                  "type": "object",
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/FeatureResponse"
@@ -222,7 +223,9 @@
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
                     }
-                  }
+                  },
+                  "title": "FeatureResponse",
+                  "type": "object"
                 }
               }
             }
@@ -288,11 +291,14 @@
             "in": "query",
             "description": "Fields to expand (use ?expand=features)",
             "schema": {
-              "type": "array",
+              "description": "Fields to expand (use ?expand=features)",
               "items": {
                 "$ref": "#/components/schemas/PlansExpand"
               },
-              "description": "Fields to expand (use ?expand=features)"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           }
         ],
@@ -302,8 +308,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "PlansResponse",
-                  "type": "object",
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/PlansResponse"
@@ -311,7 +315,9 @@
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
                     }
-                  }
+                  },
+                  "title": "PlansResponse",
+                  "type": "object"
                 }
               }
             }
@@ -377,11 +383,14 @@
             "in": "query",
             "description": "Fields to expand (use ?expand=features)",
             "schema": {
-              "type": "array",
+              "description": "Fields to expand (use ?expand=features)",
               "items": {
                 "$ref": "#/components/schemas/PlanExpand"
               },
-              "description": "Fields to expand (use ?expand=features)"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
@@ -390,8 +399,8 @@
             "description": "Plan ID to look up",
             "required": true,
             "schema": {
-              "type": "string",
-              "description": "Plan ID to look up"
+              "description": "Plan ID to look up",
+              "type": "string"
             }
           }
         ],
@@ -401,8 +410,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "PlanResponse",
-                  "type": "object",
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/PlanResponse"
@@ -410,7 +417,9 @@
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
                     }
-                  }
+                  },
+                  "title": "PlanResponse",
+                  "type": "object"
                 }
               }
             }
@@ -476,11 +485,14 @@
             "in": "query",
             "description": "Fields to expand (use ?expand=plan\u0026expand=features\u0026expand=subscription)",
             "schema": {
-              "type": "array",
+              "description": "Fields to expand (use ?expand=plan\u0026expand=features\u0026expand=subscription)",
               "items": {
                 "$ref": "#/components/schemas/UserExpand"
               },
-              "description": "Fields to expand (use ?expand=plan\u0026expand=features\u0026expand=subscription)"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
@@ -489,8 +501,8 @@
             "description": "User ID to look up",
             "required": true,
             "schema": {
-              "type": "string",
-              "description": "User ID to look up"
+              "description": "User ID to look up",
+              "type": "string"
             }
           }
         ],
@@ -500,8 +512,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "UserResponse",
-                  "type": "object",
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/UserResponse"
@@ -509,7 +519,9 @@
                     "meta": {
                       "$ref": "#/components/schemas/Meta"
                     }
-                  }
+                  },
+                  "title": "UserResponse",
+                  "type": "object"
                 }
               }
             }
@@ -574,82 +586,119 @@
         "type": "string"
       },
       "CheckResponse": {
-        "type": "object",
         "properties": {
           "allowed": {
-            "type": "boolean",
-            "description": "Whether the user has access to this feature"
+            "description": "Whether the user has access to this feature",
+            "type": "boolean"
           },
           "feature": {
-            "$ref": "#/components/schemas/Feature"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Feature",
+                "type": "object"
+              }
+            ],
+            "description": "The checked feature (requires expand=feature)",
+            "type": "object"
           },
           "plan": {
-            "$ref": "#/components/schemas/Plan"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Plan",
+                "type": "object"
+              }
+            ],
+            "description": "The user's current plan (requires expand=plan or expand=plan.features)",
+            "type": "object"
           },
           "reason": {
+            "description": "Reason for the access decision",
             "enum": [
               "no_subscription",
               "default_plan",
               "feature_in_plan",
               "insufficient_plan"
             ],
-            "type": "string",
-            "description": "Reason for the access decision"
+            "type": "string"
           },
           "user_id": {
-            "type": "string",
-            "description": "The user ID"
+            "description": "The user ID",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "allowed",
+          "user_id",
+          "reason"
+        ],
+        "type": "object"
       },
       "ErrorResponse": {
-        "type": "object",
         "properties": {
           "error": {
             "$ref": "#/components/schemas/ProblemDetails"
           }
-        }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
       },
       "Feature": {
-        "type": "object",
         "properties": {
           "description": {
-            "type": "string",
-            "description": "Feature description"
+            "description": "Feature description",
+            "type": "string"
           },
           "id": {
-            "type": "string",
-            "description": "Feature identifier"
+            "description": "Feature identifier",
+            "type": "string"
           },
           "name": {
-            "type": "string",
-            "description": "Feature display name"
+            "description": "Feature display name",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
       },
       "FeatureResponse": {
-        "type": "object",
         "properties": {
           "feature": {
-            "$ref": "#/components/schemas/Feature"
+            "$ref": "#/components/schemas/Feature",
+            "description": "Feature details"
           }
-        }
+        },
+        "required": [
+          "feature"
+        ],
+        "type": "object"
       },
       "FeaturesResponse": {
-        "type": "object",
         "properties": {
           "features": {
-            "type": "array",
+            "description": "All available features",
             "items": {
               "$ref": "#/components/schemas/Feature"
             },
-            "description": "All available features",
-            "nullable": true
+            "type": "array"
           }
-        }
+        },
+        "required": [
+          "features"
+        ],
+        "type": "object"
       },
       "FieldError": {
-        "type": "object",
         "properties": {
           "field": {
             "type": "string"
@@ -657,96 +706,123 @@
           "message": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "field",
+          "message"
+        ],
+        "type": "object"
       },
       "LemonSqueezySubscription": {
-        "type": "object",
         "properties": {
           "billing_anchor": {
-            "type": "integer",
-            "description": "Day of month for billing"
+            "description": "Day of month for billing",
+            "type": "integer"
           },
           "cancelled": {
-            "type": "boolean",
-            "description": "Whether the subscription has been cancelled"
+            "description": "Whether the subscription has been cancelled",
+            "type": "boolean"
           },
           "card_brand": {
-            "type": "string",
-            "description": "Payment card brand"
+            "description": "Payment card brand",
+            "type": "string"
           },
           "card_last_four": {
-            "type": "string",
-            "description": "Last four digits of payment card"
+            "description": "Last four digits of payment card",
+            "type": "string"
           },
           "created_at": {
-            "type": "integer",
             "description": "Unix timestamp when subscription was created",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           },
           "customer_id": {
-            "type": "integer",
-            "description": "LemonSqueezy customer ID"
+            "description": "LemonSqueezy customer ID",
+            "type": "integer"
           },
           "ends_at": {
-            "type": "integer",
             "description": "Unix timestamp when subscription ends",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ]
           },
           "id": {
-            "type": "integer",
-            "description": "LemonSqueezy subscription ID"
+            "description": "LemonSqueezy subscription ID",
+            "type": "integer"
           },
           "order_id": {
-            "type": "integer",
-            "description": "LemonSqueezy order ID"
+            "description": "LemonSqueezy order ID",
+            "type": "integer"
           },
           "product_id": {
-            "type": "integer",
-            "description": "LemonSqueezy product ID"
+            "description": "LemonSqueezy product ID",
+            "type": "integer"
           },
           "product_name": {
-            "type": "string",
-            "description": "Product display name"
+            "description": "Product display name",
+            "type": "string"
           },
           "renews_at": {
-            "type": "integer",
             "description": "Unix timestamp when subscription renews",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           },
           "status": {
-            "type": "string",
-            "description": "Subscription status"
+            "description": "Subscription status",
+            "type": "string"
           },
           "status_formatted": {
-            "type": "string",
-            "description": "Human-readable subscription status"
+            "description": "Human-readable subscription status",
+            "type": "string"
           },
           "subscription_item_id": {
-            "type": "integer",
-            "description": "LemonSqueezy subscription item ID"
+            "description": "LemonSqueezy subscription item ID",
+            "type": "integer"
           },
           "trial_ends_at": {
-            "type": "integer",
             "description": "Unix timestamp when trial ends",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ]
           },
           "updated_at": {
-            "type": "integer",
             "description": "Unix timestamp when subscription was last updated",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           },
           "variant_id": {
-            "type": "integer",
-            "description": "LemonSqueezy variant ID"
+            "description": "LemonSqueezy variant ID",
+            "type": "integer"
           },
           "variant_name": {
-            "type": "string",
-            "description": "Variant display name"
+            "description": "Variant display name",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "id",
+          "customer_id",
+          "order_id",
+          "product_id",
+          "product_name",
+          "variant_id",
+          "variant_name",
+          "status",
+          "status_formatted",
+          "card_brand",
+          "card_last_four",
+          "cancelled",
+          "billing_anchor",
+          "subscription_item_id",
+          "renews_at",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
       },
       "Meta": {
-        "type": "object",
         "properties": {
           "request_id": {
             "type": "string"
@@ -757,38 +833,51 @@
           "version": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "request_id",
+          "timestamp",
+          "version"
+        ],
+        "type": "object"
       },
       "Plan": {
-        "type": "object",
         "properties": {
           "description": {
-            "type": "string",
-            "description": "Plan description"
+            "description": "Plan description",
+            "type": "string"
           },
           "features": {
-            "type": "array",
+            "description": "Features included in this plan",
             "items": {
               "$ref": "#/components/schemas/Feature"
             },
-            "description": "Features included in this plan"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "id": {
-            "type": "string",
-            "description": "Plan identifier"
+            "description": "Plan identifier",
+            "type": "string"
           },
           "name": {
-            "type": "string",
-            "description": "Plan display name"
+            "description": "Plan display name",
+            "type": "string"
           },
           "variants": {
-            "type": "array",
+            "description": "Pricing variants for this plan",
             "items": {
               "$ref": "#/components/schemas/Variant"
             },
-            "description": "Pricing variants for this plan"
+            "type": "array"
           }
-        }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
       },
       "PlanExpand": {
         "enum": [
@@ -797,12 +886,16 @@
         "type": "string"
       },
       "PlanResponse": {
-        "type": "object",
         "properties": {
           "plan": {
-            "$ref": "#/components/schemas/Plan"
+            "$ref": "#/components/schemas/Plan",
+            "description": "Plan details"
           }
-        }
+        },
+        "required": [
+          "plan"
+        ],
+        "type": "object"
       },
       "PlansExpand": {
         "enum": [
@@ -811,29 +904,30 @@
         "type": "string"
       },
       "PlansResponse": {
-        "type": "object",
         "properties": {
           "plans": {
-            "type": "array",
+            "description": "List of available plans",
             "items": {
               "$ref": "#/components/schemas/Plan"
             },
-            "description": "List of available plans",
-            "nullable": true
+            "type": "array"
           }
-        }
+        },
+        "required": [
+          "plans"
+        ],
+        "type": "object"
       },
       "ProblemDetails": {
-        "type": "object",
         "properties": {
           "detail": {
             "type": "string"
           },
           "fields": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/FieldError"
-            }
+            },
+            "type": "array"
           },
           "request_id": {
             "type": "string"
@@ -854,30 +948,43 @@
             ],
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "type",
+          "title",
+          "detail",
+          "status",
+          "request_id"
+        ],
+        "type": "object"
       },
       "ProviderSubscription": {
-        "type": "object",
         "oneOf": [
           {
             "$ref": "#/components/schemas/LemonSqueezySubscription"
           }
-        ]
+        ],
+        "type": "object"
       },
       "RawSubscription": {
-        "type": "object",
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/ProviderSubscription"
+            "$ref": "#/components/schemas/ProviderSubscription",
+            "description": "Provider-specific subscription data"
           },
           "provider": {
+            "description": "Provider identifier",
             "enum": [
               "lemonsqueezy"
             ],
-            "type": "string",
-            "description": "Provider identifier"
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "provider",
+          "data"
+        ],
+        "type": "object"
       },
       "UserExpand": {
         "enum": [
@@ -888,109 +995,157 @@
         "type": "string"
       },
       "UserResponse": {
-        "type": "object",
         "properties": {
           "features": {
-            "type": "array",
+            "description": "Features available to the user (requires expand=features)",
             "items": {
               "$ref": "#/components/schemas/Feature"
             },
-            "description": "Features available to the user (requires expand=features)"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "plan": {
-            "$ref": "#/components/schemas/Plan"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Plan",
+                "type": "object"
+              }
+            ],
+            "description": "Plan details (requires expand=plan)",
+            "type": "object"
           },
           "plan_id": {
-            "type": "string",
-            "description": "The user's current plan ID"
+            "description": "The user's current plan ID",
+            "type": "string"
           },
           "subscription": {
-            "$ref": "#/components/schemas/UserSubscription"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserSubscription",
+                "type": "object"
+              }
+            ],
+            "description": "Subscription details (requires expand=subscription)",
+            "type": "object"
           },
           "user_id": {
-            "type": "string",
-            "description": "The user ID"
+            "description": "The user ID",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "user_id",
+          "plan_id"
+        ],
+        "type": "object"
       },
       "UserSubscription": {
-        "type": "object",
         "properties": {
           "cancelled": {
-            "type": "boolean",
-            "description": "Whether the subscription has been cancelled"
+            "description": "Whether the subscription has been cancelled",
+            "type": "boolean"
           },
           "ends_at": {
-            "type": "integer",
             "description": "Unix timestamp when subscription ends (if cancelled)",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ]
           },
           "raw": {
-            "$ref": "#/components/schemas/RawSubscription"
+            "$ref": "#/components/schemas/RawSubscription",
+            "description": "Raw provider-specific subscription data"
           },
           "renews_at": {
-            "type": "integer",
             "description": "Unix timestamp when subscription renews",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ]
           },
           "status": {
-            "type": "string",
-            "description": "Subscription status (active, on_trial, paused, past_due, cancelled, expired)"
+            "description": "Subscription status (active, on_trial, paused, past_due, cancelled, expired)",
+            "type": "string"
           },
           "trial_ends_at": {
-            "type": "integer",
             "description": "Unix timestamp when trial ends (if on trial)",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ]
           }
-        }
+        },
+        "required": [
+          "status",
+          "cancelled",
+          "raw"
+        ],
+        "type": "object"
       },
       "Variant": {
-        "type": "object",
         "properties": {
           "has_free_trial": {
-            "type": "boolean",
-            "description": "Whether this variant has a free trial"
+            "description": "Whether this variant has a free trial",
+            "type": "boolean"
           },
           "id": {
-            "type": "integer",
-            "description": "Variant identifier"
+            "description": "Variant identifier",
+            "type": "integer"
           },
           "interval": {
-            "type": "string",
-            "description": "Billing interval (month, year, etc.)"
+            "description": "Billing interval (month, year, etc.)",
+            "type": "string"
           },
           "interval_count": {
-            "type": "integer",
-            "description": "Number of intervals between billings"
+            "description": "Number of intervals between billings",
+            "type": "integer"
           },
           "name": {
-            "type": "string",
-            "description": "Variant display name"
+            "description": "Variant display name",
+            "type": "string"
           },
           "price": {
             "description": "Price in cents"
           },
           "sort": {
-            "type": "integer",
-            "description": "Display order"
+            "description": "Display order",
+            "type": "integer"
           },
           "trial_interval": {
-            "type": "string",
-            "description": "Trial billing interval"
+            "description": "Trial billing interval",
+            "type": "string"
           },
           "trial_interval_count": {
-            "type": "integer",
-            "description": "Trial duration in intervals"
+            "description": "Trial duration in intervals",
+            "type": "integer"
           }
-        }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "interval",
+          "interval_count",
+          "has_free_trial",
+          "sort"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
       "ApiKeyAuth": {
+        "description": "API key for authentication",
         "type": "apiKey",
         "name": "X-Api-Key",
-        "in": "header",
-        "description": "API key for authentication"
+        "in": "header"
       }
     }
   }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/swaggest/openapi-go/openapi3"
+	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/entitlements"
 	"github.com/grantsy/grantsy/internal/httptools"
@@ -21,7 +21,7 @@ func newFeaturesMux(t *testing.T) *http.ServeMux {
 	svc := newTestService(t, newEmptyLoader(t), nil)
 	route := entitlements.NewRouteFeatures(svc)
 	mux := http.NewServeMux()
-	route.Register(mux, openapi3.NewReflector())
+	route.Register(mux, openapi31.NewReflector())
 	return mux
 }
 
