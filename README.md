@@ -8,9 +8,52 @@
 
 ---
 
-Grantsy manages feature access for your SaaS product. It uses [Casbin](https://casbin.org/) RBAC to enforce which features each user can access based on their subscription plan, with [LemonSqueezy](https://www.lemonsqueezy.com/) as the billing source of truth.
+Grantsy manages feature access for your SaaS product. It uses [Casbin](https://casbin.org/) RBAC to enforce which features each user can access based on their subscription plan, with your billing provider as the source of truth.
 
-Define your plans and features in a YAML config. Grantsy handles the rest: webhook processing from LemonSqueezy, subscription tracking, and a simple API your application calls to check feature access.
+Define your plans and features in a YAML config. Grantsy handles the rest: webhook processing from your payment provider, subscription tracking, and a simple API your application calls to check feature access.
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant App as 💻 Your App
+    participant G as 🔒 Grantsy
+    participant BP as 💰 Billing Provider
+
+    Note over G: Plans & features defined<br/>in YAML config
+    BP->>G: Subscription webhook
+    G->>G: Store subscription data
+    Note over G,BP: Grantsy also syncs pricing<br/>& variants from the provider
+
+    App->>G: Check feature access (user_id, feature)
+    G-->>App: allowed / denied
+
+    G->>App: Outgoing webhook (user plan changed)
+    Note over App,G: Also available:<br/>GET /features<br/>GET /plans<br/>GET /users/{user_id}
+```
+
+Your app doesn't need to implement complex billing or access-check logic — just call Grantsy's API to check if a user has access to a feature.
+
+```go
+client, _ := grantsy.New("http://localhost:8080", "your-api-key")
+
+result, _, _ := client.Check(ctx, grantsy.CheckParams{
+    UserID:  "user123",
+    Feature: "dashboard",
+})
+
+if result.Data.Allowed {
+    // grant access
+}
+```
+
+**Supported providers:**
+- [LemonSqueezy](https://www.lemonsqueezy.com/)
+- More coming soon! (Want to see your provider supported? [Open an issue](https://github.com/grantsy/grantsy/issues/new))
+
+**SDKs:**
+- [Golang](https://github.com/grantsy/grantsy-go)
+- More coming soon! (Want an SDK for your language? [Open an issue](https://github.com/grantsy/grantsy/issues/new))
 
 ## Quick Start
 
