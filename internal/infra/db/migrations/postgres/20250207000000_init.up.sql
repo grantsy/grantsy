@@ -1,7 +1,7 @@
 -- LemonSqueezy subscriptions
 CREATE TABLE IF NOT EXISTS subscriptions_lemonsqueezy (
     id                   INTEGER PRIMARY KEY,
-    user_id              TEXT NOT NULL UNIQUE,
+    user_id              TEXT NOT NULL,
     customer_id          INTEGER NOT NULL DEFAULT 0,
     order_id             INTEGER NOT NULL DEFAULT 0,
     product_id           INTEGER NOT NULL DEFAULT 0,
@@ -23,3 +23,7 @@ CREATE TABLE IF NOT EXISTS subscriptions_lemonsqueezy (
 );
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_lemonsqueezy_status ON subscriptions_lemonsqueezy(status);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_lemonsqueezy_user_active
+ON subscriptions_lemonsqueezy(user_id)
+WHERE status IN ('on_trial', 'active', 'past_due', 'cancelled');

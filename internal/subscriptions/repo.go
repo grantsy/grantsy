@@ -128,6 +128,10 @@ func (r *Repo) GetSubscriptionByUserID(
 			created_at, updated_at
 		FROM %s
 		WHERE user_id = $1
+		ORDER BY
+			CASE WHEN status IN ('on_trial', 'active', 'past_due', 'cancelled') THEN 0 ELSE 1 END,
+			updated_at DESC
+		LIMIT 1
 	`, table))
 
 	var sub Subscription
@@ -154,6 +158,7 @@ func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 		FROM %s
 		WHERE product_id IS NOT NULL
 		  AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
+		ORDER BY user_id, updated_at DESC
 	`, table)
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -172,7 +177,9 @@ func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 		if err := rows.Scan(&userID, &productID); err != nil {
 			return nil, fmt.Errorf("subscriptions: failed to scan row: %w", err)
 		}
-		result[userID] = productID
+		if _, exists := result[userID]; !exists {
+			result[userID] = productID
+		}
 	}
 
 	if err := rows.Err(); err != nil {

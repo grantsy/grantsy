@@ -83,12 +83,15 @@ func NewService(
 	}
 
 	s := &Service{
-		enforcer:            e,
-		ent:                 ent,
-		subLoader:           subLoader,
-		notifier:            notifier,
-		plansByID:           make(map[string]*config.PlanConfig, len(ent.Plans)),
-		featuresByID:        make(map[string]*config.FeatureConfig, len(ent.Features)),
+		enforcer:  e,
+		ent:       ent,
+		subLoader: subLoader,
+		notifier:  notifier,
+		plansByID: make(map[string]*config.PlanConfig, len(ent.Plans)),
+		featuresByID: make(
+			map[string]*config.FeatureConfig,
+			len(ent.Features),
+		),
 		productToPlan:       make(map[int]string, len(products)),
 		defaultPlanFeatures: make(map[string]struct{}),
 	}
@@ -234,7 +237,7 @@ func (s *Service) OnSubscriptionChange(
 			return err
 		}
 	} else if !active {
-		// Expired, paused, cancelled, etc. - deactivate
+		// Expired - deactivate
 		if err := s.deactivateUser(userID); err != nil {
 			return err
 		}

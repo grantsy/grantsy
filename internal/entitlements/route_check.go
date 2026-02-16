@@ -37,9 +37,9 @@ type CheckRequest struct {
 }
 
 type CheckResponse struct {
-	Allowed bool                      `json:"allowed"          description:"Whether the user has access to this feature"`
-	UserID  string                    `json:"user_id"          description:"The user ID"`
-	Reason  CheckReason               `json:"reason"           description:"Reason for the access decision"                                         enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan"`
+	Allowed bool                          `json:"allowed"          description:"Whether the user has access to this feature"`
+	UserID  string                        `json:"user_id"          description:"The user ID"`
+	Reason  CheckReason                   `json:"reason"           description:"Reason for the access decision"                                         enum:"no_subscription,default_plan,feature_in_plan,insufficient_plan"`
 	Feature httptools.Expandable[Feature] `json:"feature,omitzero" description:"The checked feature (requires expand=feature)"`
 	Plan    httptools.Expandable[Plan]    `json:"plan,omitzero"    description:"The user's current plan (requires expand=plan or expand=plan.features)"`
 }

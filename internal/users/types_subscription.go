@@ -8,12 +8,12 @@ import (
 
 // UserSubscription is the subscription display type for user responses.
 type UserSubscription struct {
-	Status      string           `json:"status"        description:"Subscription status (active, on_trial, paused, past_due, cancelled, expired)" required:"true"`
-	TrialEndsAt *int64           `json:"trial_ends_at" description:"Unix timestamp when trial ends (if on trial)"`
-	RenewsAt    *int64           `json:"renews_at"     description:"Unix timestamp when subscription renews"`
-	EndsAt      *int64           `json:"ends_at"       description:"Unix timestamp when subscription ends (if cancelled)"`
-	Cancelled   bool             `json:"cancelled"     description:"Whether the subscription has been cancelled"                                  required:"true"`
-	Raw         RawSubscription  `json:"raw"           description:"Raw provider-specific subscription data"                                  required:"true"`
+	Status      string          `json:"status"        description:"Subscription status (active, on_trial, paused, past_due, cancelled, expired)" required:"true"`
+	TrialEndsAt *int64          `json:"trial_ends_at" description:"Unix timestamp when trial ends (if on trial)"`
+	RenewsAt    *int64          `json:"renews_at"     description:"Unix timestamp when subscription renews"`
+	EndsAt      *int64          `json:"ends_at"       description:"Unix timestamp when subscription ends (if cancelled)"`
+	Cancelled   bool            `json:"cancelled"     description:"Whether the subscription has been cancelled"                                  required:"true"`
+	Raw         RawSubscription `json:"raw"           description:"Raw provider-specific subscription data"                                  required:"true"`
 }
 
 // RawSubscription wraps provider-specific subscription data with a provider identifier.

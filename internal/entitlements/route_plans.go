@@ -54,11 +54,11 @@ type PlansResponse struct {
 }
 
 type Plan struct {
-	ID          string                         `json:"id"                    description:"Plan identifier"`
-	Name        string                         `json:"name"                  description:"Plan display name"`
-	Description string                         `json:"description,omitempty" description:"Plan description"`
+	ID          string                          `json:"id"                    description:"Plan identifier"`
+	Name        string                          `json:"name"                  description:"Plan display name"`
+	Description string                          `json:"description,omitempty" description:"Plan description"`
 	Features    httptools.Expandable[[]Feature] `json:"features,omitzero"    description:"Features included in this plan"`
-	Variants    []Variant                      `json:"variants,omitempty"    description:"Pricing variants for this plan"`
+	Variants    []Variant                       `json:"variants,omitempty"    description:"Pricing variants for this plan"`
 }
 
 type Feature struct {

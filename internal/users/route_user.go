@@ -53,8 +53,8 @@ type UserRequest struct {
 }
 
 type UserResponse struct {
-	UserID       string                                      `json:"user_id"              description:"The user ID"`
-	PlanID       string                                      `json:"plan_id"              description:"The user's current plan ID"`
+	UserID       string                                       `json:"user_id"              description:"The user ID"`
+	PlanID       string                                       `json:"plan_id"              description:"The user's current plan ID"`
 	Plan         httptools.Expandable[entitlements.Plan]      `json:"plan,omitzero"        description:"Plan details (requires expand=plan)"`
 	Features     httptools.Expandable[[]entitlements.Feature] `json:"features,omitzero"    description:"Features available to the user (requires expand=features)"`
 	Subscription httptools.Expandable[UserSubscription]       `json:"subscription,omitzero" description:"Subscription details (requires expand=subscription)"`
@@ -62,11 +62,11 @@ type UserResponse struct {
 
 // userResponseSchema mirrors UserResponse for OpenAPI spec generation with nullable fields.
 type userResponseSchema struct {
-	UserID       string                  `json:"user_id"       description:"The user ID"                                                                  required:"true"`
-	PlanID       string                  `json:"plan_id"       description:"The user's current plan ID"                                                    required:"true"`
+	UserID       string                   `json:"user_id"       description:"The user ID"                                                                  required:"true"`
+	PlanID       string                   `json:"plan_id"       description:"The user's current plan ID"                                                    required:"true"`
 	Plan         *entitlements.PlanSchema `json:"plan"          description:"Plan details (requires expand=plan)"`
-	Features     []entitlements.Feature  `json:"features"      description:"Features available to the user (requires expand=features)" nullable:"true"`
-	Subscription *UserSubscription       `json:"subscription"  description:"Subscription details (requires expand=subscription)"`
+	Features     []entitlements.Feature   `json:"features"      description:"Features available to the user (requires expand=features)" nullable:"true"`
+	Subscription *UserSubscription        `json:"subscription"  description:"Subscription details (requires expand=subscription)"`
 }
 
 type RouteUser struct {
