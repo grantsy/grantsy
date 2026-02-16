@@ -61,7 +61,7 @@ func (w *Worker) send(
 	endpoint config.WebhookEndpoint,
 	body []byte,
 ) error {
-	wh, err := standardwebhooks.NewWebhook(endpoint.Secret)
+	wh, err := standardwebhooks.NewWebhookRaw([]byte(endpoint.Secret))
 	if err != nil {
 		return fmt.Errorf("failed to create webhook signer: %w", err)
 	}
