@@ -45,7 +45,10 @@ func NewLemonSqueezyProvider(
 
 // Start loads pricing data and optionally refreshes it periodically.
 // If syncPeriod is 0, it loads once and returns.
-func (p *LemonSqueezyProvider) Start(ctx context.Context, syncPeriod time.Duration) {
+func (p *LemonSqueezyProvider) Start(
+	ctx context.Context,
+	syncPeriod time.Duration,
+) {
 	p.load(ctx)
 
 	if syncPeriod <= 0 {
@@ -68,7 +71,11 @@ func (p *LemonSqueezyProvider) Start(ctx context.Context, syncPeriod time.Durati
 func (p *LemonSqueezyProvider) load(ctx context.Context) {
 	resp, _, err := p.client.Products.ListWithVariants(ctx)
 	if err != nil {
-		slog.Error("failed to fetch products with variants from LemonSqueezy", "error", err)
+		slog.Error(
+			"failed to fetch products with variants from LemonSqueezy",
+			"error",
+			err,
+		)
 		return
 	}
 
@@ -98,7 +105,7 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 		cache[planID] = append(cache[planID], entitlements.Variant{
 			ID:                 id,
 			Name:               variant.Attributes.Name,
-			Price:              variant.Attributes.Price,
+			Price:              variant.Attributes.Price.(int),
 			Interval:           interval,
 			IntervalCount:      intervalCount,
 			HasFreeTrial:       variant.Attributes.HasFreeTrial,
@@ -122,7 +129,9 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 }
 
 // GetPlanVariants returns cached variant data for the given plan.
-func (p *LemonSqueezyProvider) GetPlanVariants(planID string) []entitlements.Variant {
+func (p *LemonSqueezyProvider) GetPlanVariants(
+	planID string,
+) []entitlements.Variant {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.cache[planID]
