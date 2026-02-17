@@ -106,7 +106,7 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 		cache[planID] = append(cache[planID], entitlements.Variant{
 			ID:                 id,
 			Name:               variant.Attributes.Name,
-			Price:              variant.Attributes.Price.(int),
+			Price:              int(variant.Attributes.Price.(float64)),
 			Interval:           interval,
 			IntervalCount:      intervalCount,
 			HasFreeTrial:       variant.Attributes.HasFreeTrial,
@@ -152,7 +152,11 @@ func (p *LemonSqueezyProvider) GetPrice(
 ) (*PriceInfo, error) {
 	resp, _, err := p.client.Prices.Get(ctx, priceID)
 	if err != nil {
-		return nil, fmt.Errorf("lemonsqueezy: failed to get price %d: %w", priceID, err)
+		return nil, fmt.Errorf(
+			"lemonsqueezy: failed to get price %d: %w",
+			priceID,
+			err,
+		)
 	}
 
 	return &PriceInfo{
