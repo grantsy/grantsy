@@ -84,9 +84,9 @@ func (w *Worker) send(
 	}
 
 	req.Header.Set(headers.ContentType, "application/json")
-	req.Header.Set("webhook-id", msgID)
-	req.Header.Set("webhook-timestamp", fmt.Sprint(ts.Unix()))
-	req.Header.Set("webhook-signature", signature)
+	req.Header.Set(standardwebhooks.HeaderWebhookID, msgID)
+	req.Header.Set(standardwebhooks.HeaderWebhookTimestamp, fmt.Sprint(ts.Unix()))
+	req.Header.Set(standardwebhooks.HeaderWebhookSignature, signature)
 
 	start := time.Now()
 	resp, err := w.client.Do(req)
