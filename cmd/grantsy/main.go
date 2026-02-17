@@ -146,6 +146,7 @@ func main() {
 		users.NewRouteUser(entService, subsRepo),
 		subscriptions.NewRouteWebhook(
 			lsProvider,
+			lsProvider,
 			subsRepo,
 			entService,
 		),

@@ -755,12 +755,24 @@
             "description": "LemonSqueezy order ID",
             "type": "integer"
           },
+          "price_id": {
+            "description": "LemonSqueezy price ID",
+            "type": "integer"
+          },
           "product_id": {
             "description": "LemonSqueezy product ID",
             "type": "integer"
           },
           "product_name": {
             "description": "Product display name",
+            "type": "string"
+          },
+          "renewal_interval_quantity": {
+            "description": "Number of intervals between billings",
+            "type": "integer"
+          },
+          "renewal_interval_unit": {
+            "description": "Billing interval unit (month, year, etc.)",
             "type": "string"
           },
           "renews_at": {
@@ -786,6 +798,10 @@
               "null",
               "integer"
             ]
+          },
+          "unit_price": {
+            "description": "Price in cents",
+            "type": "integer"
           },
           "updated_at": {
             "description": "Unix timestamp when subscription was last updated",
@@ -816,6 +832,10 @@
           "cancelled",
           "billing_anchor",
           "subscription_item_id",
+          "price_id",
+          "unit_price",
+          "renewal_interval_unit",
+          "renewal_interval_quantity",
           "renews_at",
           "created_at",
           "updated_at"

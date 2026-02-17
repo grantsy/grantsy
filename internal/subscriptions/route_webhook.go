@@ -40,14 +40,21 @@ type WebhookVerifier interface {
 	VerifyWebhook(ctx context.Context, signature string, body []byte) bool
 }
 
+// PriceFetcher fetches price data from the billing provider.
+type PriceFetcher interface {
+	GetPrice(ctx context.Context, priceID int) (*PriceInfo, error)
+}
+
 type RouteWebhook struct {
 	repo     SubscriptionWriter
 	observer SubscriptionObserver
 	provider WebhookVerifier
+	pricing  PriceFetcher
 }
 
 func NewRouteWebhook(
 	provider WebhookVerifier,
+	pricing PriceFetcher,
 	repo SubscriptionWriter,
 	observer SubscriptionObserver,
 ) *RouteWebhook {
@@ -55,6 +62,7 @@ func NewRouteWebhook(
 		repo:     repo,
 		observer: observer,
 		provider: provider,
+		pricing:  pricing,
 	}
 }
 
@@ -92,6 +100,20 @@ func (route *RouteWebhook) Handler() http.Handler {
 			}
 			log.Debug(eventName, "request", request)
 			sub := MapLemonsqueezyToSubscription(request)
+			if sub.PriceID == 0 {
+				log.Error("missing price_id in webhook payload", "subscription_id", sub.ID)
+				httptools.WriteStatus(w, http.StatusBadRequest)
+				return
+			}
+			price, err := route.pricing.GetPrice(r.Context(), sub.PriceID)
+			if err != nil {
+				log.Error("failed to fetch price", "error", err, "price_id", sub.PriceID)
+				httptools.WriteStatus(w, http.StatusInternalServerError)
+				return
+			}
+			sub.UnitPrice = price.UnitPrice
+			sub.RenewalIntervalUnit = price.RenewalIntervalUnit
+			sub.RenewalIntervalQuantity = price.RenewalIntervalQuantity
 			if err := route.repo.UpsertSubscription(r.Context(), sub); err != nil {
 				log.Info("failed to upsert subscription", "error", err)
 				httptools.WriteStatus(w, http.StatusInternalServerError)
@@ -150,9 +172,10 @@ func MapLemonsqueezyToSubscription(
 	s lemonsqueezy.WebhookRequestSubscription,
 ) *Subscription {
 	subscriptionID, _ := strconv.Atoi(s.Data.ID)
-	var subscriptionItemID int
+	var subscriptionItemID, priceID int
 	if s.Data.Attributes.FirstSubscriptionItem != nil {
 		subscriptionItemID = s.Data.Attributes.FirstSubscriptionItem.ID
+		priceID = s.Data.Attributes.FirstSubscriptionItem.PriceID
 	}
 
 	userID, _ := s.Meta.CustomData["user_id"].(string)
@@ -174,6 +197,7 @@ func MapLemonsqueezyToSubscription(
 		TrialEndsAt:        TimePtrToUnix(s.Data.Attributes.TrialEndsAt),
 		BillingAnchor:      s.Data.Attributes.BillingAnchor,
 		SubscriptionItemID: subscriptionItemID,
+		PriceID:            priceID,
 		RenewsAt:           s.Data.Attributes.RenewsAt.Unix(),
 		EndsAt:             TimePtrToUnix(s.Data.Attributes.EndsAt),
 		CreatedAt:          s.Data.Attributes.CreatedAt.Unix(),

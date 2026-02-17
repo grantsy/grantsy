@@ -51,11 +51,15 @@ type LemonSqueezySubscription struct {
 	Cancelled          bool   `json:"cancelled"            description:"Whether the subscription has been cancelled"     required:"true"`
 	TrialEndsAt        *int64 `json:"trial_ends_at"        description:"Unix timestamp when trial ends"`
 	BillingAnchor      int    `json:"billing_anchor"       description:"Day of month for billing"                        required:"true"`
-	SubscriptionItemID int    `json:"subscription_item_id" description:"LemonSqueezy subscription item ID"               required:"true"`
-	RenewsAt           int64  `json:"renews_at"            description:"Unix timestamp when subscription renews"         required:"true"`
-	EndsAt             *int64 `json:"ends_at"              description:"Unix timestamp when subscription ends"`
-	CreatedAt          int64  `json:"created_at"           description:"Unix timestamp when subscription was created"    required:"true"`
-	UpdatedAt          int64  `json:"updated_at"           description:"Unix timestamp when subscription was last updated" required:"true"`
+	SubscriptionItemID      int    `json:"subscription_item_id"      description:"LemonSqueezy subscription item ID"               required:"true"`
+	PriceID                 int    `json:"price_id"                  description:"LemonSqueezy price ID"                           required:"true"`
+	UnitPrice               int    `json:"unit_price"                description:"Price in cents"                                  required:"true"`
+	RenewalIntervalUnit     string `json:"renewal_interval_unit"     description:"Billing interval unit (month, year, etc.)"       required:"true"`
+	RenewalIntervalQuantity int    `json:"renewal_interval_quantity" description:"Number of intervals between billings"            required:"true"`
+	RenewsAt                int64  `json:"renews_at"                 description:"Unix timestamp when subscription renews"         required:"true"`
+	EndsAt                  *int64 `json:"ends_at"                   description:"Unix timestamp when subscription ends"`
+	CreatedAt               int64  `json:"created_at"                description:"Unix timestamp when subscription was created"    required:"true"`
+	UpdatedAt               int64  `json:"updated_at"                description:"Unix timestamp when subscription was last updated" required:"true"`
 }
 
 // ToRawSubscription converts a domain Subscription to a RawSubscription display type.
@@ -77,8 +81,12 @@ func ToRawSubscription(sub *subscriptions.Subscription) RawSubscription {
 			Cancelled:          sub.Cancelled,
 			TrialEndsAt:        sub.TrialEndsAt,
 			BillingAnchor:      sub.BillingAnchor,
-			SubscriptionItemID: sub.SubscriptionItemID,
-			RenewsAt:           sub.RenewsAt,
+			SubscriptionItemID:      sub.SubscriptionItemID,
+			PriceID:                 sub.PriceID,
+			UnitPrice:               sub.UnitPrice,
+			RenewalIntervalUnit:     sub.RenewalIntervalUnit,
+			RenewalIntervalQuantity: sub.RenewalIntervalQuantity,
+			RenewsAt:                sub.RenewsAt,
 			EndsAt:             sub.EndsAt,
 			CreatedAt:          sub.CreatedAt,
 			UpdatedAt:          sub.UpdatedAt,

@@ -2,6 +2,7 @@ package subscriptions
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strconv"
@@ -135,6 +136,30 @@ func (p *LemonSqueezyProvider) GetPlanVariants(
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.cache[planID]
+}
+
+// PriceInfo holds price data fetched from LemonSqueezy.
+type PriceInfo struct {
+	UnitPrice               int
+	RenewalIntervalUnit     string
+	RenewalIntervalQuantity int
+}
+
+// GetPrice fetches price data from LemonSqueezy by price ID.
+func (p *LemonSqueezyProvider) GetPrice(
+	ctx context.Context,
+	priceID int,
+) (*PriceInfo, error) {
+	resp, _, err := p.client.Prices.Get(ctx, priceID)
+	if err != nil {
+		return nil, fmt.Errorf("lemonsqueezy: failed to get price %d: %w", priceID, err)
+	}
+
+	return &PriceInfo{
+		UnitPrice:               resp.Data.Attributes.UnitPrice,
+		RenewalIntervalUnit:     resp.Data.Attributes.RenewalIntervalUnit,
+		RenewalIntervalQuantity: resp.Data.Attributes.RenewalIntervalQuantity,
+	}, nil
 }
 
 // VerifyWebhook validates a LemonSqueezy webhook signature.

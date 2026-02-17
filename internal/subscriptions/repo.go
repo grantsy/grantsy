@@ -25,11 +25,15 @@ type Subscription struct {
 	Cancelled          bool
 	TrialEndsAt        *int64
 	BillingAnchor      int
-	SubscriptionItemID int
-	RenewsAt           int64
-	EndsAt             *int64
-	CreatedAt          int64
-	UpdatedAt          int64
+	SubscriptionItemID     int
+	RenewsAt               int64
+	EndsAt                 *int64
+	CreatedAt              int64
+	UpdatedAt              int64
+	PriceID                int
+	UnitPrice              int
+	RenewalIntervalUnit    string
+	RenewalIntervalQuantity int
 }
 
 // IsActive returns true if the subscription grants access.
@@ -61,8 +65,9 @@ func (r *Repo) UpsertSubscription(
 			variant_id, variant_name, status, status_formatted,
 			card_brand, card_last_four, cancelled, trial_ends_at,
 			billing_anchor, subscription_item_id, renews_at, ends_at,
-			created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+			created_at, updated_at,
+			price_id, unit_price, renewal_interval_unit, renewal_interval_quantity
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 		ON CONFLICT(id) DO UPDATE SET
 			user_id = excluded.user_id,
 			customer_id = excluded.customer_id,
@@ -81,7 +86,11 @@ func (r *Repo) UpsertSubscription(
 			subscription_item_id = excluded.subscription_item_id,
 			renews_at = excluded.renews_at,
 			ends_at = excluded.ends_at,
-			updated_at = excluded.updated_at
+			updated_at = excluded.updated_at,
+			price_id = excluded.price_id,
+			unit_price = excluded.unit_price,
+			renewal_interval_unit = excluded.renewal_interval_unit,
+			renewal_interval_quantity = excluded.renewal_interval_quantity
 	`, table))
 
 	_, err := r.db.ExecContext(
@@ -107,6 +116,10 @@ func (r *Repo) UpsertSubscription(
 		sub.EndsAt,
 		sub.CreatedAt,
 		sub.UpdatedAt,
+		sub.PriceID,
+		sub.UnitPrice,
+		sub.RenewalIntervalUnit,
+		sub.RenewalIntervalQuantity,
 	)
 	if err != nil {
 		return fmt.Errorf("billing: failed to upsert subscription: %w", err)
@@ -125,7 +138,8 @@ func (r *Repo) GetSubscriptionByUserID(
 			variant_id, variant_name, status, status_formatted,
 			card_brand, card_last_four, cancelled, trial_ends_at,
 			billing_anchor, subscription_item_id, renews_at, ends_at,
-			created_at, updated_at
+			created_at, updated_at,
+			price_id, unit_price, renewal_interval_unit, renewal_interval_quantity
 		FROM %s
 		WHERE user_id = $1
 		ORDER BY
@@ -141,6 +155,7 @@ func (r *Repo) GetSubscriptionByUserID(
 		&sub.CardBrand, &sub.CardLastFour, &sub.Cancelled, &sub.TrialEndsAt,
 		&sub.BillingAnchor, &sub.SubscriptionItemID, &sub.RenewsAt, &sub.EndsAt,
 		&sub.CreatedAt, &sub.UpdatedAt,
+		&sub.PriceID, &sub.UnitPrice, &sub.RenewalIntervalUnit, &sub.RenewalIntervalQuantity,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -19,7 +19,11 @@ CREATE TABLE IF NOT EXISTS subscriptions_lemonsqueezy (
     renews_at            INTEGER NOT NULL DEFAULT 0,
     ends_at              INTEGER,
     created_at           INTEGER NOT NULL DEFAULT 0,
-    updated_at           INTEGER NOT NULL DEFAULT 0
+    updated_at           INTEGER NOT NULL DEFAULT 0,
+    price_id             INTEGER NOT NULL DEFAULT 0,
+    unit_price           INTEGER NOT NULL DEFAULT 0,
+    renewal_interval_unit     TEXT NOT NULL DEFAULT '',
+    renewal_interval_quantity INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_lemonsqueezy_status ON subscriptions_lemonsqueezy(status);
