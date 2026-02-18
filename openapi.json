@@ -1080,6 +1080,10 @@
               "integer"
             ]
           },
+          "plan_id": {
+            "description": "The plan ID this subscription is for",
+            "type": "string"
+          },
           "raw": {
             "$ref": "#/components/schemas/RawSubscription",
             "description": "Raw provider-specific subscription data"
@@ -1104,6 +1108,7 @@
           }
         },
         "required": [
+          "plan_id",
           "status",
           "cancelled",
           "raw"

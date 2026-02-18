@@ -23,6 +23,7 @@ type EntitlementService interface {
 	GetPlan(planID string) *config.PlanConfig
 	GetFeature(featureID string) *config.FeatureConfig
 	GetUserFeatures(userID string) []string
+	ResolvePlanFromProduct(productID int) string
 }
 
 // SubscriptionRepo reads subscription data from the database.
@@ -147,7 +148,8 @@ func (route *RouteUser) Handler() http.Handler {
 				return
 			}
 			if sub != nil {
-				resp.Subscription = httptools.Set(*ToUserSubscription(sub))
+				subPlanID := route.entService.ResolvePlanFromProduct(sub.ProductID)
+				resp.Subscription = httptools.Set(*ToUserSubscription(sub, subPlanID))
 			} else {
 				resp.Subscription = httptools.Null[UserSubscription]()
 			}

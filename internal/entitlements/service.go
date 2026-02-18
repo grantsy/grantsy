@@ -144,7 +144,7 @@ func (s *Service) loadSubscriptions(ctx context.Context) error {
 	defer s.mu.Unlock()
 
 	for userID, productID := range userPlans {
-		planID := s.resolvePlanFromProduct(productID)
+		planID := s.ResolvePlanFromProduct(productID)
 		if planID != "" {
 			if _, err := s.enforcer.AddGroupingPolicy(userID, planID); err != nil {
 				return fmt.Errorf(
@@ -269,7 +269,7 @@ func (s *Service) activateUser(userID string, productID int) error {
 		return fmt.Errorf("failed to delete roles for user %s: %w", userID, err)
 	}
 
-	planID := s.resolvePlanFromProduct(productID)
+	planID := s.ResolvePlanFromProduct(productID)
 	if planID == "" {
 		return nil
 	}
@@ -309,7 +309,8 @@ func (s *Service) GetFeature(featureID string) *config.FeatureConfig {
 	return s.featuresByID[featureID]
 }
 
-func (s *Service) resolvePlanFromProduct(productID int) string {
+// ResolvePlanFromProduct returns the plan ID mapped to a product ID, or empty string if unknown.
+func (s *Service) ResolvePlanFromProduct(productID int) string {
 	return s.productToPlan[productID]
 }
 

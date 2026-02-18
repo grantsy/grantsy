@@ -10,29 +10,29 @@ import (
 )
 
 type Subscription struct {
-	ID                 int
-	UserID             string
-	CustomerID         int
-	OrderID            int
-	ProductID          int
-	ProductName        string
-	VariantID          int
-	VariantName        string
-	Status             string
-	StatusFormatted    string
-	CardBrand          string
-	CardLastFour       string
-	Cancelled          bool
-	TrialEndsAt        *int64
-	BillingAnchor      int
-	SubscriptionItemID     int
-	RenewsAt               int64
-	EndsAt                 *int64
-	CreatedAt              int64
-	UpdatedAt              int64
-	PriceID                int
-	UnitPrice              int
-	RenewalIntervalUnit    string
+	ID                      int
+	UserID                  string
+	CustomerID              int
+	OrderID                 int
+	ProductID               int
+	ProductName             string
+	VariantID               int
+	VariantName             string
+	Status                  string
+	StatusFormatted         string
+	CardBrand               string
+	CardLastFour            string
+	Cancelled               bool
+	TrialEndsAt             *int64
+	BillingAnchor           int
+	SubscriptionItemID      int
+	RenewsAt                int64
+	EndsAt                  *int64
+	CreatedAt               int64
+	UpdatedAt               int64
+	PriceID                 int
+	UnitPrice               int
+	RenewalIntervalUnit     string
 	RenewalIntervalQuantity int
 }
 

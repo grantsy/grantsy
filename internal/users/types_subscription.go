@@ -8,6 +8,7 @@ import (
 
 // UserSubscription is the subscription display type for user responses.
 type UserSubscription struct {
+	PlanID      string          `json:"plan_id"       description:"The plan ID this subscription is for"                                         required:"true"`
 	Status      string          `json:"status"        description:"Subscription status (active, on_trial, paused, past_due, cancelled, expired)" required:"true"`
 	TrialEndsAt *int64          `json:"trial_ends_at" description:"Unix timestamp when trial ends (if on trial)"`
 	RenewsAt    *int64          `json:"renews_at"     description:"Unix timestamp when subscription renews"`
@@ -37,20 +38,20 @@ func (ProviderSubscription) JSONSchemaOneOf() []any {
 }
 
 type LemonSqueezySubscription struct {
-	ID                 int    `json:"id"                   description:"LemonSqueezy subscription ID"                    required:"true"`
-	CustomerID         int    `json:"customer_id"          description:"LemonSqueezy customer ID"                        required:"true"`
-	OrderID            int    `json:"order_id"             description:"LemonSqueezy order ID"                           required:"true"`
-	ProductID          int    `json:"product_id"           description:"LemonSqueezy product ID"                         required:"true"`
-	ProductName        string `json:"product_name"         description:"Product display name"                            required:"true"`
-	VariantID          int    `json:"variant_id"           description:"LemonSqueezy variant ID"                         required:"true"`
-	VariantName        string `json:"variant_name"         description:"Variant display name"                            required:"true"`
-	Status             string `json:"status"               description:"Subscription status"                             required:"true"`
-	StatusFormatted    string `json:"status_formatted"     description:"Human-readable subscription status"              required:"true"`
-	CardBrand          string `json:"card_brand"           description:"Payment card brand"                              required:"true"`
-	CardLastFour       string `json:"card_last_four"       description:"Last four digits of payment card"                required:"true"`
-	Cancelled          bool   `json:"cancelled"            description:"Whether the subscription has been cancelled"     required:"true"`
-	TrialEndsAt        *int64 `json:"trial_ends_at"        description:"Unix timestamp when trial ends"`
-	BillingAnchor      int    `json:"billing_anchor"       description:"Day of month for billing"                        required:"true"`
+	ID                      int    `json:"id"                   description:"LemonSqueezy subscription ID"                    required:"true"`
+	CustomerID              int    `json:"customer_id"          description:"LemonSqueezy customer ID"                        required:"true"`
+	OrderID                 int    `json:"order_id"             description:"LemonSqueezy order ID"                           required:"true"`
+	ProductID               int    `json:"product_id"           description:"LemonSqueezy product ID"                         required:"true"`
+	ProductName             string `json:"product_name"         description:"Product display name"                            required:"true"`
+	VariantID               int    `json:"variant_id"           description:"LemonSqueezy variant ID"                         required:"true"`
+	VariantName             string `json:"variant_name"         description:"Variant display name"                            required:"true"`
+	Status                  string `json:"status"               description:"Subscription status"                             required:"true"`
+	StatusFormatted         string `json:"status_formatted"     description:"Human-readable subscription status"              required:"true"`
+	CardBrand               string `json:"card_brand"           description:"Payment card brand"                              required:"true"`
+	CardLastFour            string `json:"card_last_four"       description:"Last four digits of payment card"                required:"true"`
+	Cancelled               bool   `json:"cancelled"            description:"Whether the subscription has been cancelled"     required:"true"`
+	TrialEndsAt             *int64 `json:"trial_ends_at"        description:"Unix timestamp when trial ends"`
+	BillingAnchor           int    `json:"billing_anchor"       description:"Day of month for billing"                        required:"true"`
 	SubscriptionItemID      int    `json:"subscription_item_id"      description:"LemonSqueezy subscription item ID"               required:"true"`
 	PriceID                 int    `json:"price_id"                  description:"LemonSqueezy price ID"                           required:"true"`
 	UnitPrice               int    `json:"unit_price"                description:"Price in cents"                                  required:"true"`
@@ -67,36 +68,37 @@ func ToRawSubscription(sub *subscriptions.Subscription) RawSubscription {
 	return RawSubscription{
 		Provider: "lemonsqueezy",
 		Data: ProviderSubscription{Value: LemonSqueezySubscription{
-			ID:                 sub.ID,
-			CustomerID:         sub.CustomerID,
-			OrderID:            sub.OrderID,
-			ProductID:          sub.ProductID,
-			ProductName:        sub.ProductName,
-			VariantID:          sub.VariantID,
-			VariantName:        sub.VariantName,
-			Status:             sub.Status,
-			StatusFormatted:    sub.StatusFormatted,
-			CardBrand:          sub.CardBrand,
-			CardLastFour:       sub.CardLastFour,
-			Cancelled:          sub.Cancelled,
-			TrialEndsAt:        sub.TrialEndsAt,
-			BillingAnchor:      sub.BillingAnchor,
+			ID:                      sub.ID,
+			CustomerID:              sub.CustomerID,
+			OrderID:                 sub.OrderID,
+			ProductID:               sub.ProductID,
+			ProductName:             sub.ProductName,
+			VariantID:               sub.VariantID,
+			VariantName:             sub.VariantName,
+			Status:                  sub.Status,
+			StatusFormatted:         sub.StatusFormatted,
+			CardBrand:               sub.CardBrand,
+			CardLastFour:            sub.CardLastFour,
+			Cancelled:               sub.Cancelled,
+			TrialEndsAt:             sub.TrialEndsAt,
+			BillingAnchor:           sub.BillingAnchor,
 			SubscriptionItemID:      sub.SubscriptionItemID,
 			PriceID:                 sub.PriceID,
 			UnitPrice:               sub.UnitPrice,
 			RenewalIntervalUnit:     sub.RenewalIntervalUnit,
 			RenewalIntervalQuantity: sub.RenewalIntervalQuantity,
 			RenewsAt:                sub.RenewsAt,
-			EndsAt:             sub.EndsAt,
-			CreatedAt:          sub.CreatedAt,
-			UpdatedAt:          sub.UpdatedAt,
+			EndsAt:                  sub.EndsAt,
+			CreatedAt:               sub.CreatedAt,
+			UpdatedAt:               sub.UpdatedAt,
 		}},
 	}
 }
 
 // ToUserSubscription converts a domain Subscription to a UserSubscription display type.
-func ToUserSubscription(sub *subscriptions.Subscription) *UserSubscription {
+func ToUserSubscription(sub *subscriptions.Subscription, planID string) *UserSubscription {
 	return &UserSubscription{
+		PlanID:      planID,
 		Status:      sub.Status,
 		TrialEndsAt: sub.TrialEndsAt,
 		RenewsAt:    &sub.RenewsAt,
