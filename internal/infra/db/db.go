@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "modernc.org/sqlite"
@@ -15,6 +16,19 @@ type DB struct {
 }
 
 func New(driver, dsn, namespace string) (*DB, error) {
+	// For PostgreSQL with a namespace, ensure the schema exists and embed
+	// search_path in the DSN so every pooled connection uses the right schema.
+	if driver == "postgres" && namespace != "" {
+		if err := ensureSchema(dsn, namespace); err != nil {
+			return nil, fmt.Errorf("db: %w", err)
+		}
+		var err error
+		dsn, err = appendSearchPath(dsn, namespace)
+		if err != nil {
+			return nil, fmt.Errorf("db: %w", err)
+		}
+	}
+
 	var db *sql.DB
 	var err error
 
@@ -35,16 +49,18 @@ func New(driver, dsn, namespace string) (*DB, error) {
 		return nil, fmt.Errorf("db: failed to ping: %w", err)
 	}
 
-	if driver == "postgres" && namespace != "" {
-		if _, err := db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", namespace)); err != nil {
-			return nil, fmt.Errorf("db: failed to create schema: %w", err)
-		}
-		if _, err := db.Exec(fmt.Sprintf("SET search_path TO %s,public", namespace)); err != nil {
-			return nil, fmt.Errorf("db: failed to set search_path: %w", err)
-		}
-	}
-
 	return &DB{DB: db, driver: driver, namespace: namespace}, nil
+}
+
+func appendSearchPath(dsn, namespace string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse dsn: %w", err)
+	}
+	q := u.Query()
+	q.Set("search_path", namespace+",public")
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
 
 // TableName returns the qualified table name for the current driver and namespace.
