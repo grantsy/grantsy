@@ -13,7 +13,8 @@ import (
 )
 
 type FeatureRequest struct {
-	FeatureID string `in:"path=feature_id" path:"feature_id" validate:"required" description:"Feature ID to look up"`
+	FeatureID      string `in:"path=feature_id"        path:"feature_id"      validate:"required" description:"Feature ID to look up"`
+	AcceptLanguage string `in:"header=Accept-Language" header:"Accept-Language"                    description:"Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language."`
 }
 
 type FeatureResponse struct {
@@ -65,7 +66,7 @@ func (route *RouteFeature) Handler() http.Handler {
 		}
 
 		httptools.JSON(w, r, http.StatusOK, FeatureResponse{
-			Feature: ToFeature(*f),
+			Feature: ToFeature(*f, NewLocalizer(input.AcceptLanguage, route.service.DefaultLanguage())),
 		})
 	})
 }

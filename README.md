@@ -96,6 +96,8 @@ All responses are wrapped in a JSON envelope with `data` and `meta` fields. Erro
 
 All endpoints except the webhook require an `X-Api-Key` header.
 
+Plan and feature `name`/`description` are localized — send a standard `Accept-Language` header to choose the language (see [Translations](#translations)).
+
 ## Configuration Reference
 
 Configuration is loaded from a YAML file. Environment variables are expanded using `${VAR}` syntax.
@@ -136,6 +138,7 @@ Application environment.
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `default_plan` | `string` | No | Plan assigned to users without a subscription. If unset, users with no subscription have no features |
+| `default_language` | `string` | No | Fallback language for `name`/`description` when `Accept-Language` has no match. Defaults to `en` (see [Translations](#translations)) |
 | `plans` | `list` | Yes | At least one plan definition |
 | `features` | `list` | Yes | At least one feature definition |
 
@@ -144,7 +147,8 @@ Application environment.
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `id` | `string` | Yes | Unique plan identifier |
-| `name` | `string` | Yes | Display name |
+| `name` | `map[string]string` | Yes | Display name as a locale→string map (must include `default_language`) |
+| `description` | `map[string]string` | No | Description as a locale→string map |
 | `features` | `list[string]` | Yes | Feature IDs included in this plan |
 
 **Feature definition:**
@@ -152,8 +156,37 @@ Application environment.
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `id` | `string` | Yes | Unique feature identifier |
-| `name` | `string` | Yes | Display name |
-| `description` | `string` | No | Human-readable description |
+| `name` | `map[string]string` | Yes | Display name as a locale→string map (must include `default_language`) |
+| `description` | `map[string]string` | No | Description as a locale→string map |
+
+#### Translations
+
+Plan and feature `name` and `description` are **locale→string maps**, so display text can be served in multiple languages:
+
+```yaml
+entitlements:
+  default_language: en
+  features:
+    - id: api
+      name:
+        en: API Access
+        es: Acceso a la API
+      description:
+        en: REST API access
+        es: Acceso a la API REST
+```
+
+The API resolves the language from the request's standard **`Accept-Language`** header and returns `name`/`description` as plain strings already in that language:
+
+```bash
+curl -H "X-Api-Key: your-api-key" -H "Accept-Language: es" \
+  "http://localhost:8080/v1/features/api"
+# → { "data": { "feature": { "id": "api", "name": "Acceso a la API", ... } } }
+```
+
+Locale keys are [BCP-47](https://en.wikipedia.org/wiki/IETF_language_tag) tags. You can list several variants of the same language — `en`, `en-US`, `en-GB`, `pt-BR`, `zh-Hans` — using a hyphen between language and region/script. Keys are normalized at load, so casing and the separator don't matter (`en_us` and `en-US` are treated the same); `en-US` is the recommended form.
+
+Resolution honors the header's quality ordering and prefers the most specific match: `Accept-Language: en-GB` picks the `en-GB` key if present, otherwise falls back to the base language `en`, and finally to `default_language`. A request without a regional preference (`Accept-Language: en`) matches the `en` key, not a regional variant. When nothing matches — or no `Accept-Language` header is sent — the value falls back to `default_language`. Every `name`/`description` map must include the `default_language` key (enforced at startup).
 
 ### `providers.lemonsqueezy`
 
@@ -225,23 +258,25 @@ database:
 
 entitlements:
   default_plan: free
+  default_language: en
   plans:
     - id: free
-      name: Free
+      name: { en: Free, es: Gratis }
       features: [dashboard]
     - id: pro
-      name: Pro
+      name: { en: Pro, es: Profesional }
+      description: { en: Professional plan, es: Plan profesional }
       features: [dashboard, api, sso]
   features:
     - id: dashboard
-      name: Dashboard
-      description: Basic dashboard access
+      name: { en: Dashboard, es: Panel }
+      description: { en: Basic dashboard access, es: Acceso básico al panel }
     - id: api
-      name: API Access
-      description: REST API access
+      name: { en: API Access, es: Acceso a la API }
+      description: { en: REST API access, es: Acceso a la API REST }
     - id: sso
-      name: Single Sign-On
-      description: SAML/OIDC integration
+      name: { en: Single Sign-On, es: Inicio de sesión único }
+      description: { en: SAML/OIDC integration, es: Integración SAML/OIDC }
 
 auth:
   api_key: "${API_KEY}"

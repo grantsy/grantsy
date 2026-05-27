@@ -24,6 +24,7 @@ type EntitlementService interface {
 	GetFeature(featureID string) *config.FeatureConfig
 	GetUserFeatures(userID string) []string
 	ResolvePlanFromProduct(productID int) string
+	DefaultLanguage() string
 }
 
 // SubscriptionRepo reads subscription data from the database.
@@ -49,8 +50,9 @@ const (
 )
 
 type UserRequest struct {
-	UserID string       `in:"path=user_id" path:"user_id" validate:"required"                              description:"User ID to look up"`
-	Expand []UserExpand `in:"query=expand"                validate:"dive,oneof=plan features subscription" description:"Fields to expand (use ?expand=plan&expand=features&expand=subscription)" query:"expand"`
+	UserID         string       `in:"path=user_id"           path:"user_id"         validate:"required"                              description:"User ID to look up"`
+	Expand         []UserExpand `in:"query=expand"           query:"expand"         validate:"dive,oneof=plan features subscription" description:"Fields to expand (use ?expand=plan&expand=features&expand=subscription)"`
+	AcceptLanguage string       `in:"header=Accept-Language" header:"Accept-Language"                                                description:"Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language."`
 }
 
 type UserResponse struct {
@@ -112,6 +114,7 @@ func (route *RouteUser) Handler() http.Handler {
 		input := valmid.Get[UserRequest](r)
 
 		planID := route.entService.GetUserPlan(input.UserID)
+		loc := entitlements.NewLocalizer(input.AcceptLanguage, route.entService.DefaultLanguage())
 
 		resp := UserResponse{
 			UserID: input.UserID,
@@ -120,7 +123,7 @@ func (route *RouteUser) Handler() http.Handler {
 
 		if slices.Contains(input.Expand, UserExpandPlan) {
 			if p := route.entService.GetPlan(planID); p != nil {
-				resp.Plan = httptools.Set(entitlements.ToPlanSummary(*p, nil))
+				resp.Plan = httptools.Set(entitlements.ToPlanSummary(*p, nil, loc))
 			} else {
 				resp.Plan = httptools.Set(entitlements.Plan{ID: planID})
 			}
@@ -131,7 +134,7 @@ func (route *RouteUser) Handler() http.Handler {
 			featureDTOs := make([]entitlements.Feature, 0, len(featureIDs))
 			for _, fID := range featureIDs {
 				if f := route.entService.GetFeature(fID); f != nil {
-					featureDTOs = append(featureDTOs, entitlements.ToFeature(*f))
+					featureDTOs = append(featureDTOs, entitlements.ToFeature(*f, loc))
 				} else {
 					featureDTOs = append(featureDTOs, entitlements.Feature{ID: fID})
 				}

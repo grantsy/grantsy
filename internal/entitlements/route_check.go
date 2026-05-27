@@ -31,9 +31,10 @@ const (
 )
 
 type CheckRequest struct {
-	UserID  string        `in:"query=user_id" query:"user_id" validate:"required"                              description:"User ID to check access for"`
-	Feature string        `in:"query=feature" query:"feature" validate:"required"                              description:"Feature ID to check access for"`
-	Expand  []CheckExpand `in:"query=expand"  query:"expand"  validate:"dive,oneof=feature plan plan.features" description:"Fields to expand (use ?expand=feature&expand=plan&expand=plan.features)"`
+	UserID         string        `in:"query=user_id"          query:"user_id"        validate:"required"                              description:"User ID to check access for"`
+	Feature        string        `in:"query=feature"          query:"feature"        validate:"required"                              description:"Feature ID to check access for"`
+	Expand         []CheckExpand `in:"query=expand"           query:"expand"         validate:"dive,oneof=feature plan plan.features" description:"Fields to expand (use ?expand=feature&expand=plan&expand=plan.features)"`
+	AcceptLanguage string        `in:"header=Accept-Language" header:"Accept-Language"                                                description:"Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language."`
 }
 
 type CheckResponse struct {
@@ -96,6 +97,8 @@ func (route *RouteCheck) Handler() http.Handler {
 		result := route.service.CheckFeature(input.UserID, input.Feature)
 		metrics.RecordEntitlementCheck(result.FeatureID, result.Allowed)
 
+		loc := NewLocalizer(input.AcceptLanguage, route.service.DefaultLanguage())
+
 		resp := CheckResponse{
 			Allowed: result.Allowed,
 			UserID:  result.UserID,
@@ -104,7 +107,7 @@ func (route *RouteCheck) Handler() http.Handler {
 
 		if slices.Contains(input.Expand, CheckExpandFeature) {
 			if f := route.service.GetFeature(result.FeatureID); f != nil {
-				resp.Feature = httptools.Set(ToFeature(*f))
+				resp.Feature = httptools.Set(ToFeature(*f, loc))
 			} else {
 				resp.Feature = httptools.Set(Feature{ID: result.FeatureID})
 			}
@@ -113,13 +116,13 @@ func (route *RouteCheck) Handler() http.Handler {
 		if slices.Contains(input.Expand, CheckExpandPlanFeatures) {
 			features := route.service.GetFeatures()
 			if p := route.service.GetPlan(result.PlanID); p != nil {
-				resp.Plan = httptools.Set(ToPlan(*p, features, nil))
+				resp.Plan = httptools.Set(ToPlan(*p, features, nil, loc))
 			} else {
 				resp.Plan = httptools.Set(Plan{ID: result.PlanID})
 			}
 		} else if slices.Contains(input.Expand, CheckExpandPlan) {
 			if p := route.service.GetPlan(result.PlanID); p != nil {
-				resp.Plan = httptools.Set(ToPlanSummary(*p, nil))
+				resp.Plan = httptools.Set(ToPlanSummary(*p, nil, loc))
 			} else {
 				resp.Plan = httptools.Set(Plan{ID: result.PlanID})
 			}

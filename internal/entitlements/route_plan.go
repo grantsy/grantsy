@@ -29,8 +29,9 @@ const (
 )
 
 type PlanRequest struct {
-	PlanID string       `in:"path=plan_id" path:"plan_id" validate:"required"            description:"Plan ID to look up"`
-	Expand []PlanExpand `in:"query=expand"                validate:"dive,oneof=features" description:"Fields to expand (use ?expand=features)" query:"expand"`
+	PlanID         string       `in:"path=plan_id"           path:"plan_id"         validate:"required"            description:"Plan ID to look up"`
+	Expand         []PlanExpand `in:"query=expand"           query:"expand"         validate:"dive,oneof=features" description:"Fields to expand (use ?expand=features)"`
+	AcceptLanguage string       `in:"header=Accept-Language" header:"Accept-Language"                               description:"Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language."`
 }
 
 type PlanResponse struct {
@@ -85,12 +86,13 @@ func (route *RoutePlan) Handler() http.Handler {
 		}
 
 		variants := route.pricing.GetPlanVariants(input.PlanID)
+		loc := NewLocalizer(input.AcceptLanguage, route.service.DefaultLanguage())
 
 		var planDTO Plan
 		if slices.Contains(input.Expand, PlanExpandFeatures) {
-			planDTO = ToPlan(*p, route.service.GetFeatures(), variants)
+			planDTO = ToPlan(*p, route.service.GetFeatures(), variants, loc)
 		} else {
-			planDTO = ToPlanSummary(*p, variants)
+			planDTO = ToPlanSummary(*p, variants, loc)
 		}
 
 		httptools.JSON(w, r, http.StatusOK, PlanResponse{

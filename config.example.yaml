@@ -15,33 +15,41 @@ entitlements:
   # If not set, users without subscription have no plan and no features.
   default_plan: "free"
 
+  # default_language is the fallback used when the request's Accept-Language has
+  # no match. Optional, defaults to "en". Every name/description map below must
+  # include this language.
+  default_language: en
+
+  # name/description are locale -> string maps. The API returns the language
+  # negotiated from the Accept-Language header, falling back to default_language.
   plans:
     - id: free
-      name: Free
+      name: { en: Free }
       features: [dashboard]
     - id: pro
-      name: Pro
+      name: { en: Pro, es: Profesional }
+      description: { en: Professional plan, es: Plan profesional }
       features: [dashboard, api, sso]
     - id: enterprise
-      name: Enterprise
+      name: { en: Enterprise }
       features: [dashboard, api, sso, audit, custom_branding]
 
   features:
     - id: dashboard
-      name: Dashboard
-      description: Basic dashboard access
+      name: { en: Dashboard }
+      description: { en: Basic dashboard access }
     - id: api
-      name: API Access
-      description: REST API access
+      name: { en: API Access, es: Acceso a la API }
+      description: { en: REST API access, es: Acceso a la API REST }
     - id: sso
-      name: Single Sign-On
-      description: SAML/OIDC integration
+      name: { en: Single Sign-On }
+      description: { en: SAML/OIDC integration }
     - id: audit
-      name: Audit Logs
-      description: Activity audit trail
+      name: { en: Audit Logs }
+      description: { en: Activity audit trail }
     - id: custom_branding
-      name: Custom Branding
-      description: White-label customization
+      name: { en: Custom Branding }
+      description: { en: White-label customization }
 
 auth:
   api_key: "${API_KEY}"
@@ -55,6 +63,7 @@ providers:
         plan_id: enterprise
     webhook:
       secret: "${LEMONSQUEEZY_WEBHOOK_SECRET}"
+    api_key: "${LEMONSQUEEZY_API_KEY}"
 
 # Outgoing webhooks (optional) - notify external services of subscription changes
 webhooks:

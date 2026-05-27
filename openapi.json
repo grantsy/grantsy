@@ -46,6 +46,15 @@
                 "null"
               ]
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+            "schema": {
+              "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -123,6 +132,17 @@
         ],
         "summary": "List all features",
         "description": "Get all available feature definitions",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+            "schema": {
+              "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "All available features",
@@ -206,6 +226,15 @@
             "required": true,
             "schema": {
               "description": "Feature ID to look up",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+            "schema": {
+              "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
               "type": "string"
             }
           }
@@ -299,6 +328,15 @@
                 "array",
                 "null"
               ]
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+            "schema": {
+              "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+              "type": "string"
             }
           }
         ],
@@ -402,6 +440,15 @@
               "description": "Plan ID to look up",
               "type": "string"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+            "schema": {
+              "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -502,6 +549,15 @@
             "required": true,
             "schema": {
               "description": "User ID to look up",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
+            "schema": {
+              "description": "Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language.",
               "type": "string"
             }
           }

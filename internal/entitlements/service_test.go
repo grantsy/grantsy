@@ -16,15 +16,16 @@ import (
 
 func testEntitlementsConfig() *config.EntitlementsConfig {
 	return &config.EntitlementsConfig{
-		DefaultPlan: "free",
+		DefaultPlan:     "free",
+		DefaultLanguage: "en",
 		Plans: []config.PlanConfig{
-			{ID: "free", Name: "Free", Features: []string{"dashboard"}},
-			{ID: "pro", Name: "Pro", Features: []string{"dashboard", "api", "sso"}},
+			{ID: "free", Name: map[string]string{"en": "Free"}, Features: []string{"dashboard"}},
+			{ID: "pro", Name: map[string]string{"en": "Pro"}, Features: []string{"dashboard", "api", "sso"}},
 		},
 		Features: []config.FeatureConfig{
-			{ID: "dashboard", Name: "Dashboard", Description: "Basic dashboard access"},
-			{ID: "api", Name: "API", Description: "API access"},
-			{ID: "sso", Name: "SSO", Description: "Single sign-on"},
+			{ID: "dashboard", Name: map[string]string{"en": "Dashboard"}, Description: map[string]string{"en": "Basic dashboard access"}},
+			{ID: "api", Name: map[string]string{"en": "API"}, Description: map[string]string{"en": "API access"}},
+			{ID: "sso", Name: map[string]string{"en": "SSO"}, Description: map[string]string{"en": "Single sign-on"}},
 		},
 	}
 }
@@ -289,7 +290,7 @@ func TestGetPlan_Exists(t *testing.T) {
 
 	require.NotNil(t, plan)
 	assert.Equal(t, "pro", plan.ID)
-	assert.Equal(t, "Pro", plan.Name)
+	assert.Equal(t, "Pro", plan.Name["en"])
 }
 
 func TestGetPlan_NotExists(t *testing.T) {

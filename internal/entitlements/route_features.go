@@ -3,12 +3,17 @@ package entitlements
 import (
 	"net/http"
 
+	"github.com/iamolegga/valmid"
 	"github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi31"
 
 	"github.com/grantsy/grantsy/internal/httptools"
 	oa "github.com/grantsy/grantsy/internal/openapi"
 )
+
+type FeaturesRequest struct {
+	AcceptLanguage string `in:"header=Accept-Language" header:"Accept-Language" description:"Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language."`
+}
 
 type FeaturesResponse struct {
 	Features []Feature `json:"features" description:"All available features" nullable:"false" required:"true"`
@@ -23,12 +28,15 @@ func NewRouteFeatures(service *Service) *RouteFeatures {
 }
 
 func (route *RouteFeatures) Register(mux *http.ServeMux, r *openapi31.Reflector) {
-	mux.Handle("GET /v1/features", route.Handler())
+	mux.Handle("GET /v1/features",
+		valmid.Middleware[FeaturesRequest]()(route.Handler()),
+	)
 	RegisterFeaturesSchema(r)
 }
 
 func RegisterFeaturesSchema(r *openapi31.Reflector) {
 	op, _ := r.NewOperationContext(http.MethodGet, "/v1/features")
+	op.AddReqStructure(new(FeaturesRequest))
 	op.AddRespStructure(struct {
 		Data FeaturesResponse `json:"data"`
 		Meta httptools.Meta   `json:"meta"`
@@ -47,11 +55,13 @@ func RegisterFeaturesSchema(r *openapi31.Reflector) {
 
 func (route *RouteFeatures) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		input := valmid.Get[FeaturesRequest](r)
+		loc := NewLocalizer(input.AcceptLanguage, route.service.DefaultLanguage())
 		features := route.service.GetFeatures()
 
 		featureDTOs := make([]Feature, len(features))
 		for i, f := range features {
-			featureDTOs[i] = ToFeature(f)
+			featureDTOs[i] = ToFeature(f, loc)
 		}
 
 		httptools.JSON(w, r, http.StatusOK, FeaturesResponse{

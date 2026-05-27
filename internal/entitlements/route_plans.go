@@ -46,7 +46,8 @@ const (
 )
 
 type PlansRequest struct {
-	Expand []PlansExpand `in:"query=expand" query:"expand" validate:"dive,oneof=features" description:"Fields to expand (use ?expand=features)"`
+	Expand         []PlansExpand `in:"query=expand"           query:"expand"         validate:"dive,oneof=features" description:"Fields to expand (use ?expand=features)"`
+	AcceptLanguage string        `in:"header=Accept-Language" header:"Accept-Language"                               description:"Preferred language(s) for localized name/description, e.g. es or en-US (BCP-47). Falls back to the configured default_language."`
 }
 
 type PlansResponse struct {
@@ -120,6 +121,7 @@ func (route *RoutePlans) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		input := valmid.Get[PlansRequest](r)
 		includeFeatures := slices.Contains(input.Expand, PlansExpandFeatures)
+		loc := NewLocalizer(input.AcceptLanguage, route.service.DefaultLanguage())
 
 		plans := route.service.GetPlans()
 		features := route.service.GetFeatures()
@@ -127,9 +129,9 @@ func (route *RoutePlans) Handler() http.Handler {
 		planDTOs := make([]Plan, len(plans))
 		for i, p := range plans {
 			if includeFeatures {
-				planDTOs[i] = ToPlan(p, features, route.pricing.GetPlanVariants(p.ID))
+				planDTOs[i] = ToPlan(p, features, route.pricing.GetPlanVariants(p.ID), loc)
 			} else {
-				planDTOs[i] = ToPlanSummary(p, route.pricing.GetPlanVariants(p.ID))
+				planDTOs[i] = ToPlanSummary(p, route.pricing.GetPlanVariants(p.ID), loc)
 			}
 		}
 
@@ -139,18 +141,21 @@ func (route *RoutePlans) Handler() http.Handler {
 	})
 }
 
-func ToFeature(f config.FeatureConfig) Feature {
+// ToFeature converts a feature config to a DTO, localizing display fields.
+func ToFeature(f config.FeatureConfig, loc Localizer) Feature {
 	return Feature{
 		ID:          f.ID,
-		Name:        f.Name,
-		Description: f.Description,
+		Name:        loc.Pick(f.Name),
+		Description: loc.Pick(f.Description),
 	}
 }
 
+// ToPlan builds a Plan DTO with its features expanded, localizing display fields.
 func ToPlan(
 	plan config.PlanConfig,
 	allFeatures []config.FeatureConfig,
 	variants []Variant,
+	loc Localizer,
 ) Plan {
 	featureIndex := make(map[string]config.FeatureConfig, len(allFeatures))
 	for _, f := range allFeatures {
@@ -160,25 +165,25 @@ func ToPlan(
 	features := make([]Feature, 0, len(plan.Features))
 	for _, fID := range plan.Features {
 		if f, ok := featureIndex[fID]; ok {
-			features = append(features, ToFeature(f))
+			features = append(features, ToFeature(f, loc))
 		}
 	}
 
 	return Plan{
 		ID:          plan.ID,
-		Name:        plan.Name,
-		Description: plan.Description,
+		Name:        loc.Pick(plan.Name),
+		Description: loc.Pick(plan.Description),
 		Features:    httptools.Set(features),
 		Variants:    variants,
 	}
 }
 
 // ToPlanSummary creates a Plan without features (for default responses without expand).
-func ToPlanSummary(plan config.PlanConfig, variants []Variant) Plan {
+func ToPlanSummary(plan config.PlanConfig, variants []Variant, loc Localizer) Plan {
 	return Plan{
 		ID:          plan.ID,
-		Name:        plan.Name,
-		Description: plan.Description,
+		Name:        loc.Pick(plan.Name),
+		Description: loc.Pick(plan.Description),
 		Variants:    variants,
 	}
 }

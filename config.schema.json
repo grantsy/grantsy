@@ -55,6 +55,11 @@
           "type": "string",
           "description": "Optional plan ID for users without subscription. If not set, users without subscription have no plan and no features."
         },
+        "default_language": {
+          "type": "string",
+          "default": "en",
+          "description": "Fallback language used when the request's Accept-Language has no match. Defaults to 'en'. Every name/description map must include this language."
+        },
         "plans": {
           "type": "array",
           "minItems": 1,
@@ -67,12 +72,14 @@
                 "description": "Unique plan identifier"
               },
               "name": {
-                "type": "string",
-                "description": "Display name"
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "Display name as a locale -> string map (e.g. { en: Pro, es: Profesional })"
               },
               "description": {
-                "type": "string",
-                "description": "Plan description"
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "Plan description as a locale -> string map"
               },
               "features": {
                 "type": "array",
@@ -96,12 +103,14 @@
                 "description": "Unique feature identifier"
               },
               "name": {
-                "type": "string",
-                "description": "Display name"
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "Display name as a locale -> string map (e.g. { en: API Access, es: Acceso a la API })"
               },
               "description": {
-                "type": "string",
-                "description": "Feature description"
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "Feature description as a locale -> string map"
               }
             }
           }
