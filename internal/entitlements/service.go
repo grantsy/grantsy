@@ -220,6 +220,66 @@ func (s *Service) GetUserFeatures(userID string) []string {
 	return plan.Features
 }
 
+// Reconcile rebuilds Casbin user->plan groupings from the subscriptions table.
+// Treats the DB as the source of truth and the in-memory enforcer as a derived
+// cache. Heals any divergence introduced by out-of-band DB writes (manual
+// fixes, migrations, support tooling) that bypassed OnSubscriptionChange.
+func (s *Service) Reconcile(ctx context.Context) error {
+	userPlans, err := s.subLoader.GetActiveUserPlans(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriptions: %w", err)
+	}
+
+	desired := make(map[string]string, len(userPlans))
+	for userID, productID := range userPlans {
+		if userID == "" {
+			continue
+		}
+		planID := s.ResolvePlanFromProduct(productID)
+		if planID == "" {
+			continue
+		}
+		desired[userID] = planID
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	current := make(map[string]string)
+	for _, plan := range s.ent.Plans {
+		users, _ := s.enforcer.GetUsersForRole(plan.ID)
+		for _, userID := range users {
+			current[userID] = plan.ID
+		}
+	}
+
+	for userID, planID := range desired {
+		if cur, ok := current[userID]; ok {
+			if cur == planID {
+				continue
+			}
+			if _, err := s.enforcer.DeleteRolesForUser(userID); err != nil {
+				return fmt.Errorf("reconcile: failed to delete roles for user %s: %w", userID, err)
+			}
+		}
+		if _, err := s.enforcer.AddGroupingPolicy(userID, planID); err != nil {
+			return fmt.Errorf("reconcile: failed to add grouping for user %s: %w", userID, err)
+		}
+	}
+
+	for userID := range current {
+		if _, ok := desired[userID]; ok {
+			continue
+		}
+		if _, err := s.enforcer.DeleteRolesForUser(userID); err != nil {
+			return fmt.Errorf("reconcile: failed to delete roles for user %s: %w", userID, err)
+		}
+	}
+
+	s.updateSubscriptionMetrics()
+	return nil
+}
+
 // OnSubscriptionChange handles subscription state changes.
 // Implements subscriptions.SubscriptionObserver interface.
 func (s *Service) OnSubscriptionChange(

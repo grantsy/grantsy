@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -120,6 +121,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	if cfg.ReconcilePeriod != "" {
+		reconcilePeriod, err := time.ParseDuration(cfg.ReconcilePeriod)
+		if err != nil {
+			slog.Error("failed to parse reconcile_period", "error", err)
+			os.Exit(1)
+		}
+		go runReconciler(
+			gracefulshutdown.GetServerBaseContext(),
+			entService,
+			reconcilePeriod,
+		)
+	}
+
 	// Start webhook worker
 	webhookWorker := webhooks.NewWorker(cfg.Webhooks.Endpoints)
 	runner := jobs.NewRunner(jobs.NewRunnerOpts{
@@ -219,4 +233,24 @@ func main() {
 		}
 	}()
 	gracefulshutdown.WaitForShutdown(srv)
+}
+
+func runReconciler(
+	ctx context.Context,
+	entService *entitlements.Service,
+	period time.Duration,
+) {
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := entService.Reconcile(ctx); err != nil {
+				slog.Error("reconcile failed", "error", err)
+			}
+		}
+	}
 }

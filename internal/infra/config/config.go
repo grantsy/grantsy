@@ -18,7 +18,8 @@ type Config struct {
 	Webhooks     OutgoingWebhooks   `yaml:"webhooks"`
 	Log          LogConfig          `yaml:"log"`
 	Metrics      MetricsConfig      `yaml:"metrics"`
-	SyncPeriod   string             `yaml:"sync_period"`
+	SyncPeriod      string `yaml:"sync_period"`
+	ReconcilePeriod string `yaml:"reconcile_period"`
 }
 
 type ServerConfig struct {
