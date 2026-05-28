@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Grantsy Configuration",
   "type": "object",
-  "required": ["server", "database", "entitlements", "auth"],
+  "required": ["database", "entitlements", "auth"],
   "properties": {
     "env": {
       "type": "string",
@@ -220,7 +220,7 @@
       "properties": {
         "enable": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Enable Prometheus metrics"
         },
         "go_metrics": {
