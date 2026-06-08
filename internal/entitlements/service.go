@@ -321,6 +321,12 @@ func (s *Service) OnSubscriptionChange(
 
 // activateUser assigns a plan to a user based on productID.
 func (s *Service) activateUser(userID string, productID int) error {
+	// Guard against an empty user ID: Casbin treats "" as a match-any wildcard,
+	// so DeleteRolesForUser("") would wipe every user's grouping.
+	if userID == "" {
+		return nil
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -343,6 +349,12 @@ func (s *Service) activateUser(userID string, productID int) error {
 
 // deactivateUser removes all plan assignments for a user.
 func (s *Service) deactivateUser(userID string) error {
+	// Guard against an empty user ID: Casbin treats "" as a match-any wildcard,
+	// so DeleteRolesForUser("") would wipe every user's grouping.
+	if userID == "" {
+		return nil
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

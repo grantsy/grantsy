@@ -100,6 +100,13 @@ func (route *RouteWebhook) Handler() http.Handler {
 			}
 			log.Debug(eventName, "request", request)
 			sub := MapLemonsqueezyToSubscription(request)
+			if sub.UserID == "" {
+				log.Warn(
+					"webhook subscription has empty user_id",
+					"subscription_id", sub.ID,
+					"event", eventName,
+				)
+			}
 			if sub.PriceID == 0 {
 				log.Error("missing price_id in webhook payload", "subscription_id", sub.ID)
 				httptools.WriteStatus(w, http.StatusBadRequest)
