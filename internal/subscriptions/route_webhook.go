@@ -153,7 +153,7 @@ func (route *RouteWebhook) notifyObserver(
 		ctx,
 		sub.UserID,
 		sub.ProductID,
-		sub.IsActive(time.Now().Unix(), route.strictAccess),
+		sub.IsActive(route.strictAccess),
 		sub,
 	)
 }

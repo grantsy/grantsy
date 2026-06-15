@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/grantsy/grantsy/internal/infra/db"
 )
@@ -35,48 +34,41 @@ type Subscription struct {
 	UnitPrice               int
 	RenewalIntervalUnit     string
 	RenewalIntervalQuantity int
+	// HasSuccessfulPayment is a sticky flag set once the subscription has been
+	// observed in status "active" (i.e. at least one charge succeeded). Used to
+	// keep past_due access for paying customers in strict mode. Internal only —
+	// not exposed via the API.
+	HasSuccessfulPayment bool
 }
 
-// IsActive returns true if the subscription grants access at the given time.
+// IsActive returns true if the subscription grants access.
 //
-// When strictAccess is false (default), the lenient legacy rule applies: any of
-// on_trial / active / past_due / cancelled grants access purely by status.
+// on_trial / active / cancelled always grant access (cancelled keeps access
+// through its grace period; LemonSqueezy moves it to "expired" once that ends).
 //
-// When strictAccess is true, the strict rule applies (aligned with
-// GetActiveUserPlans):
-//   - active / on_trial: always active. (Cancelling during a trial immediately
-//     moves the subscription to "cancelled", so on_trial never needs a guard.)
-//   - cancelled: active only if this is NOT a trial cancellation (no trial, or
-//     the trial already ended) AND the paid grace period is still running.
-//     A trial cancellation has trial_ends_at in the future (the customer never
-//     paid) and must be treated as inactive immediately.
-//   - past_due: inactive — the current period's payment failed, so it is unpaid.
-//   - everything else (expired, paused, unpaid, ...): inactive.
-func (s *Subscription) IsActive(now int64, strictAccess bool) bool {
-	if !strictAccess {
-		switch s.Status {
-		case "on_trial", "active", "past_due", "cancelled":
-			return true
-		default:
-			return false
-		}
-	}
-
+// strictAccess only affects past_due. In lenient mode (false) past_due keeps
+// access during dunning. In strict mode (true) past_due keeps access only if
+// the subscription has had a successful payment (HasSuccessfulPayment) — this
+// preserves the dunning grace for paying customers while cutting off trial
+// abusers whose very first charge bounced (they never reached "active").
+//
+// Everything else (expired, paused, unpaid, ...) is inactive.
+//
+// NOTE: the past_due rule is mirrored in Repo.GetActiveUserPlans (SQL) — keep
+// the two in sync.
+func (s *Subscription) IsActive(strictAccess bool) bool {
 	switch s.Status {
-	case "active", "on_trial":
+	case "on_trial", "active", "cancelled":
 		return true
-	case "cancelled":
-		notTrialCancel := s.TrialEndsAt == nil || *s.TrialEndsAt <= now
-		inGrace := s.EndsAt == nil || now < *s.EndsAt
-		return notTrialCancel && inGrace
+	case "past_due":
+		return !strictAccess || s.HasSuccessfulPayment
 	default:
-		// past_due (strict), expired, paused, unpaid, etc.
 		return false
 	}
 }
 
 type Repo struct {
-	db       *db.DB
+	db           *db.DB
 	strictAccess bool
 }
 
@@ -90,14 +82,15 @@ func (r *Repo) UpsertSubscription(
 ) error {
 	table := r.db.TableName("subscriptions_lemonsqueezy")
 	query := r.db.Rebind(fmt.Sprintf(`
-		INSERT INTO %s (
+		INSERT INTO %[1]s (
 			id, user_id, customer_id, order_id, product_id, product_name,
 			variant_id, variant_name, status, status_formatted,
 			card_brand, card_last_four, cancelled, trial_ends_at,
 			billing_anchor, subscription_item_id, renews_at, ends_at,
 			created_at, updated_at,
-			price_id, unit_price, renewal_interval_unit, renewal_interval_quantity
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+			price_id, unit_price, renewal_interval_unit, renewal_interval_quantity,
+			has_successful_payment
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
 		ON CONFLICT(id) DO UPDATE SET
 			user_id = excluded.user_id,
 			customer_id = excluded.customer_id,
@@ -120,10 +113,15 @@ func (r *Repo) UpsertSubscription(
 			price_id = excluded.price_id,
 			unit_price = excluded.unit_price,
 			renewal_interval_unit = excluded.renewal_interval_unit,
-			renewal_interval_quantity = excluded.renewal_interval_quantity
+			renewal_interval_quantity = excluded.renewal_interval_quantity,
+			has_successful_payment = %[1]s.has_successful_payment OR excluded.has_successful_payment
+		RETURNING has_successful_payment
 	`, table))
 
-	_, err := r.db.ExecContext(
+	// RETURNING gives back the accumulated (sticky) flag in one round-trip, so
+	// the in-memory sub reflects the persisted value — e.g. a past_due event on
+	// a previously-active subscription still sees has_successful_payment = true.
+	if err := r.db.QueryRowContext(
 		ctx,
 		query,
 		sub.ID,
@@ -150,8 +148,8 @@ func (r *Repo) UpsertSubscription(
 		sub.UnitPrice,
 		sub.RenewalIntervalUnit,
 		sub.RenewalIntervalQuantity,
-	)
-	if err != nil {
+		sub.Status == "active",
+	).Scan(&sub.HasSuccessfulPayment); err != nil {
 		return fmt.Errorf("billing: failed to upsert subscription: %w", err)
 	}
 
@@ -200,41 +198,23 @@ func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 	table := r.db.TableName("subscriptions_lemonsqueezy")
 
 	// The active set must mirror Subscription.IsActive for the same strictAccess.
-	var query string
-	var queryArgs []any
-	if !r.strictAccess {
-		// Legacy (lenient): activity is decided purely by status.
-		query = fmt.Sprintf(`
-			SELECT user_id, product_id
-			FROM %s
-			WHERE product_id IS NOT NULL
-			  AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
-			ORDER BY user_id, updated_at DESC
-		`, table)
-	} else {
-		// Strict:
-		//   active / on_trial          -> active
-		//   cancelled (not a trial cancellation, still in paid grace) -> active
-		//   past_due / expired / ...   -> inactive
-		// Comparisons use math ordering (smaller on the left).
-		query = r.db.Rebind(fmt.Sprintf(`
-			SELECT user_id, product_id
-			FROM %s
-			WHERE product_id IS NOT NULL
-			  AND (
-			    status = 'active'
-			    OR status = 'on_trial'
-			    OR (status = 'cancelled'
-			        AND (trial_ends_at IS NULL OR trial_ends_at <= $1)
-			        AND (ends_at IS NULL OR $2 < ends_at))
-			  )
-			ORDER BY user_id, updated_at DESC
-		`, table))
-		now := time.Now().Unix()
-		queryArgs = []any{now, now}
+	// Lenient grants access to on_trial/active/past_due/cancelled. Strict keeps
+	// past_due only for subscriptions that have had a successful payment
+	// (has_successful_payment), mirroring the past_due branch in IsActive.
+	predicate := "status IN ('on_trial', 'active', 'past_due', 'cancelled')"
+	if r.strictAccess {
+		predicate = "(status IN ('on_trial', 'active', 'cancelled') " +
+			"OR (status = 'past_due' AND has_successful_payment = TRUE))"
 	}
+	query := fmt.Sprintf(`
+		SELECT user_id, product_id
+		FROM %s
+		WHERE product_id IS NOT NULL
+		  AND %s
+		ORDER BY user_id, updated_at DESC
+	`, table, predicate)
 
-	rows, err := r.db.QueryContext(ctx, query, queryArgs...)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"subscriptions: failed to query active user plans: %w",

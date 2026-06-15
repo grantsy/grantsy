@@ -203,15 +203,18 @@ CREATE TABLE subscriptions_lemonsqueezy (
     trial_ends_at INTEGER,         -- Unix timestamp
     renews_at INTEGER,
     ends_at INTEGER,
+    has_successful_payment BOOLEAN NOT NULL DEFAULT FALSE, -- sticky: ever seen "active"
     ...
 );
 ```
 
 Active subscriptions (which statuses grant access) depend on `strict_access`:
 - `false` (default, lenient): `status IN ('on_trial', 'active', 'past_due', 'cancelled')`
-- `true` (strict): `active`/`on_trial` active; `past_due` inactive; `cancelled` active only if not a trial cancellation (`trial_ends_at` empty/past) and still in grace (`now < ends_at`). Cuts off trial abusers.
+- `true` (strict): `on_trial`/`active`/`cancelled` active; `past_due` active **only if `has_successful_payment`**. Keeps the dunning grace for paying customers but cuts off trial abusers whose first charge bounced (they never reached `active`).
 
-The decision lives in `Subscription.IsActive(now, strictAccess)` and the mirrored `Repo.GetActiveUserPlans` query — both branch on the flag and must stay in sync.
+`has_successful_payment` is a sticky boolean column set the first time a subscription is seen in status `active` (accumulated via `OR` in the upsert; backfilled to `TRUE` only for existing `active` rows). Internal only — not exposed via the API.
+
+The decision lives in `Subscription.IsActive(strictAccess)` and the mirrored `Repo.GetActiveUserPlans` query — both branch on the flag and must stay in sync.
 
 ---
 
@@ -316,7 +319,7 @@ task docker-run       # Run in Docker
 - DB stores subscriptions and outgoing webhook queue (goqite)
 - Outgoing webhooks: plan changes enqueued via goqite, processed by `webhooks.Worker`
 - Free tier: users without subscription get `default_plan`
-- `strict_access` config (default `false`) toggles strict subscription-status interpretation to cut off trial abusers; see the Database section for the active-status rules per mode
+- `strict_access` config (default `false`) toggles strict subscription-status interpretation: when `true`, `past_due` keeps access only if the subscription has had a successful payment (`has_successful_payment`); see the Database section for the active-status rules per mode
 - Graceful shutdown: 3-phase (drain → shutdown → cancel)
 - OpenAPI spec generated via `cmd/openapi-gen`, served at `GET /openapi.json`
 - Do not write tests unless asked

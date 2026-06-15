@@ -134,7 +134,7 @@
     },
     "strict_access": {
       "type": "boolean",
-      "description": "Strict subscription-status interpretation to cut off trial abusers. false (default): lenient — on_trial/active/past_due/cancelled all grant access. true: strict — past_due and trial cancellations lose access immediately.",
+      "description": "Strict subscription-status interpretation. false (default): lenient — on_trial/active/past_due/cancelled all grant access. true: strict — past_due keeps access only if the subscription has had a successful payment (paying customer in dunning stays; never-paid trial abuser is cut off).",
       "default": false
     },
     "providers": {
