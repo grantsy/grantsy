@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/grantsy/grantsy/internal/infra/db"
 )
@@ -36,22 +37,51 @@ type Subscription struct {
 	RenewalIntervalQuantity int
 }
 
-// IsActive returns true if the subscription grants access.
-func (s *Subscription) IsActive() bool {
+// IsActive returns true if the subscription grants access at the given time.
+//
+// When strictAccess is false (default), the lenient legacy rule applies: any of
+// on_trial / active / past_due / cancelled grants access purely by status.
+//
+// When strictAccess is true, the strict rule applies (aligned with
+// GetActiveUserPlans):
+//   - active / on_trial: always active. (Cancelling during a trial immediately
+//     moves the subscription to "cancelled", so on_trial never needs a guard.)
+//   - cancelled: active only if this is NOT a trial cancellation (no trial, or
+//     the trial already ended) AND the paid grace period is still running.
+//     A trial cancellation has trial_ends_at in the future (the customer never
+//     paid) and must be treated as inactive immediately.
+//   - past_due: inactive — the current period's payment failed, so it is unpaid.
+//   - everything else (expired, paused, unpaid, ...): inactive.
+func (s *Subscription) IsActive(now int64, strictAccess bool) bool {
+	if !strictAccess {
+		switch s.Status {
+		case "on_trial", "active", "past_due", "cancelled":
+			return true
+		default:
+			return false
+		}
+	}
+
 	switch s.Status {
-	case "on_trial", "active", "past_due", "cancelled":
+	case "active", "on_trial":
 		return true
+	case "cancelled":
+		notTrialCancel := s.TrialEndsAt == nil || *s.TrialEndsAt <= now
+		inGrace := s.EndsAt == nil || now < *s.EndsAt
+		return notTrialCancel && inGrace
 	default:
+		// past_due (strict), expired, paused, unpaid, etc.
 		return false
 	}
 }
 
 type Repo struct {
-	db *db.DB
+	db       *db.DB
+	strictAccess bool
 }
 
-func NewRepo(database *db.DB) *Repo {
-	return &Repo{db: database}
+func NewRepo(database *db.DB, strictAccess bool) *Repo {
+	return &Repo{db: database, strictAccess: strictAccess}
 }
 
 func (r *Repo) UpsertSubscription(
@@ -168,15 +198,43 @@ func (r *Repo) GetSubscriptionByUserID(
 
 func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 	table := r.db.TableName("subscriptions_lemonsqueezy")
-	query := fmt.Sprintf(`
-		SELECT user_id, product_id
-		FROM %s
-		WHERE product_id IS NOT NULL
-		  AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
-		ORDER BY user_id, updated_at DESC
-	`, table)
 
-	rows, err := r.db.QueryContext(ctx, query)
+	// The active set must mirror Subscription.IsActive for the same strictAccess.
+	var query string
+	var queryArgs []any
+	if !r.strictAccess {
+		// Legacy (lenient): activity is decided purely by status.
+		query = fmt.Sprintf(`
+			SELECT user_id, product_id
+			FROM %s
+			WHERE product_id IS NOT NULL
+			  AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
+			ORDER BY user_id, updated_at DESC
+		`, table)
+	} else {
+		// Strict:
+		//   active / on_trial          -> active
+		//   cancelled (not a trial cancellation, still in paid grace) -> active
+		//   past_due / expired / ...   -> inactive
+		// Comparisons use math ordering (smaller on the left).
+		query = r.db.Rebind(fmt.Sprintf(`
+			SELECT user_id, product_id
+			FROM %s
+			WHERE product_id IS NOT NULL
+			  AND (
+			    status = 'active'
+			    OR status = 'on_trial'
+			    OR (status = 'cancelled'
+			        AND (trial_ends_at IS NULL OR trial_ends_at <= $1)
+			        AND (ends_at IS NULL OR $2 < ends_at))
+			  )
+			ORDER BY user_id, updated_at DESC
+		`, table))
+		now := time.Now().Unix()
+		queryArgs = []any{now, now}
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"subscriptions: failed to query active user plans: %w",

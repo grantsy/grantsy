@@ -23,5 +23,5 @@ func newSQLiteRepo(t *testing.T) *subscriptions.Repo {
 
 	t.Cleanup(func() { database.Close() })
 
-	return subscriptions.NewRepo(database)
+	return subscriptions.NewRepo(database, true)
 }

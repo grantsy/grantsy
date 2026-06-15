@@ -50,6 +50,7 @@ type RouteWebhook struct {
 	observer SubscriptionObserver
 	provider WebhookVerifier
 	pricing  PriceFetcher
+	strictAccess bool
 }
 
 func NewRouteWebhook(
@@ -57,12 +58,14 @@ func NewRouteWebhook(
 	pricing PriceFetcher,
 	repo SubscriptionWriter,
 	observer SubscriptionObserver,
+	strictAccess bool,
 ) *RouteWebhook {
 	return &RouteWebhook{
 		repo:     repo,
 		observer: observer,
 		provider: provider,
 		pricing:  pricing,
+		strictAccess: strictAccess,
 	}
 }
 
@@ -150,7 +153,7 @@ func (route *RouteWebhook) notifyObserver(
 		ctx,
 		sub.UserID,
 		sub.ProductID,
-		sub.IsActive(),
+		sub.IsActive(time.Now().Unix(), route.strictAccess),
 		sub,
 	)
 }

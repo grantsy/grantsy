@@ -90,7 +90,7 @@ func main() {
 	webhookQueue.Setup(gracefulshutdown.GetServerBaseContext())
 
 	// Create services (order matters for DI chain)
-	subsRepo := subscriptions.NewRepo(database)
+	subsRepo := subscriptions.NewRepo(database, cfg.StrictAccess)
 
 	webhookService := webhooks.NewService(webhookQueue, cfg.Webhooks.Endpoints)
 
@@ -163,6 +163,7 @@ func main() {
 			lsProvider,
 			subsRepo,
 			entService,
+			cfg.StrictAccess,
 		),
 	}
 	mux := http.NewServeMux()

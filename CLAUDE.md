@@ -161,6 +161,8 @@ auth:
 
 sync_period: ""              # Optional periodic pricing/variant data refresh (e.g. "15m", "1h30m")
 
+strict_access: false         # Strict subscription-status interpretation (see Notes). false = lenient
+
 providers:
   lemonsqueezy:
     api_key: ${LEMONSQUEEZY_API_KEY}  # Required, for fetching pricing/variants
@@ -205,7 +207,11 @@ CREATE TABLE subscriptions_lemonsqueezy (
 );
 ```
 
-Active subscriptions: `status IN ('active', 'on_trial')`
+Active subscriptions (which statuses grant access) depend on `strict_access`:
+- `false` (default, lenient): `status IN ('on_trial', 'active', 'past_due', 'cancelled')`
+- `true` (strict): `active`/`on_trial` active; `past_due` inactive; `cancelled` active only if not a trial cancellation (`trial_ends_at` empty/past) and still in grace (`now < ends_at`). Cuts off trial abusers.
+
+The decision lives in `Subscription.IsActive(now, strictAccess)` and the mirrored `Repo.GetActiveUserPlans` query — both branch on the flag and must stay in sync.
 
 ---
 
@@ -310,6 +316,7 @@ task docker-run       # Run in Docker
 - DB stores subscriptions and outgoing webhook queue (goqite)
 - Outgoing webhooks: plan changes enqueued via goqite, processed by `webhooks.Worker`
 - Free tier: users without subscription get `default_plan`
+- `strict_access` config (default `false`) toggles strict subscription-status interpretation to cut off trial abusers; see the Database section for the active-status rules per mode
 - Graceful shutdown: 3-phase (drain → shutdown → cancel)
 - OpenAPI spec generated via `cmd/openapi-gen`, served at `GET /openapi.json`
 - Do not write tests unless asked

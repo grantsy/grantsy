@@ -132,6 +132,11 @@
       "description": "Optional periodic sync interval in Go duration format (e.g. '15m', '1h30m'). If empty, data is only loaded at startup.",
       "default": ""
     },
+    "strict_access": {
+      "type": "boolean",
+      "description": "Strict subscription-status interpretation to cut off trial abusers. false (default): lenient — on_trial/active/past_due/cancelled all grant access. true: strict — past_due and trial cancellations lose access immediately.",
+      "default": false
+    },
     "providers": {
       "type": "object",
       "description": "Payment provider configurations",

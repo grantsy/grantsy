@@ -184,7 +184,7 @@ func TestRouteWebhook_MissingSignature(t *testing.T) {
 	observer := mocks.NewMockSubscriptionObserver(t)
 
 	pricing := mocks.NewMockPriceFetcher(t)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader("{}"))
@@ -202,7 +202,7 @@ func TestRouteWebhook_InvalidSignature(t *testing.T) {
 	observer := mocks.NewMockSubscriptionObserver(t)
 
 	pricing := mocks.NewMockPriceFetcher(t)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader("{}"))
@@ -223,7 +223,7 @@ func TestRouteWebhook_InvalidEventName(t *testing.T) {
 	observer := mocks.NewMockSubscriptionObserver(t)
 
 	pricing := mocks.NewMockPriceFetcher(t)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
@@ -245,7 +245,7 @@ func TestRouteWebhook_InvalidPayload(t *testing.T) {
 	observer := mocks.NewMockSubscriptionObserver(t)
 
 	pricing := mocks.NewMockPriceFetcher(t)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(
@@ -270,7 +270,7 @@ func TestRouteWebhook_MissingPriceID(t *testing.T) {
 	writer := mocks.NewMockSubscriptionWriter(t)
 	observer := mocks.NewMockSubscriptionObserver(t)
 	pricing := mocks.NewMockPriceFetcher(t)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
@@ -292,7 +292,7 @@ func TestRouteWebhook_PriceFetchError(t *testing.T) {
 	observer := mocks.NewMockSubscriptionObserver(t)
 	pricing := mocks.NewMockPriceFetcher(t)
 	pricing.EXPECT().GetPrice(mock.Anything, 555).Return(nil, assert.AnError)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
@@ -317,7 +317,7 @@ func TestRouteWebhook_UpsertError(t *testing.T) {
 
 	pricing := mocks.NewMockPriceFetcher(t)
 	pricing.EXPECT().GetPrice(mock.Anything, 555).Return(&subscriptions.PriceInfo{UnitPrice: 999}, nil)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
@@ -345,7 +345,7 @@ func TestRouteWebhook_ObserverError(t *testing.T) {
 
 	pricing := mocks.NewMockPriceFetcher(t)
 	pricing.EXPECT().GetPrice(mock.Anything, 555).Return(&subscriptions.PriceInfo{UnitPrice: 999}, nil)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
@@ -373,7 +373,7 @@ func TestRouteWebhook_Success_Created(t *testing.T) {
 
 	pricing := mocks.NewMockPriceFetcher(t)
 	pricing.EXPECT().GetPrice(mock.Anything, 555).Return(&subscriptions.PriceInfo{UnitPrice: 999}, nil)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
@@ -401,7 +401,7 @@ func TestRouteWebhook_Success_Updated(t *testing.T) {
 
 	pricing := mocks.NewMockPriceFetcher(t)
 	pricing.EXPECT().GetPrice(mock.Anything, 555).Return(&subscriptions.PriceInfo{UnitPrice: 999}, nil)
-	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
 	handler := route.Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))

@@ -21,6 +21,7 @@ type Config struct {
 	Metrics         MetricsConfig      `yaml:"metrics"`
 	SyncPeriod      string             `yaml:"sync_period"`
 	ReconcilePeriod string             `yaml:"reconcile_period"`
+	StrictAccess    bool               `yaml:"strict_access"`
 }
 
 type ServerConfig struct {

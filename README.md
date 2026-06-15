@@ -227,6 +227,23 @@ Optional outgoing webhooks to notify external services of subscription changes.
 
 Periodic sync interval for refreshing pricing and variant data from the provider (e.g. `15m`, `1h30m`). Leave empty to disable.
 
+### `strict_access`
+
+| | |
+|---|---|
+| **Type** | `bool` |
+| **Default** | `false` |
+
+Controls how LemonSqueezy subscription statuses are interpreted when deciding whether a user has access.
+
+- `false` (default, lenient): access is granted purely by status — `on_trial`, `active`, `past_due`, and `cancelled` all count as active.
+- `true` (strict): tightens the rules to cut off trial abusers:
+  - `past_due` (the renewal/first charge failed, so the current period is unpaid) → **no access**.
+  - `cancelled` → access only if it is *not* a cancellation made during the trial. A trial cancellation (the customer never paid, `trial_ends_at` still in the future) loses access immediately; a cancellation after a paid period keeps access until `ends_at` (grace period).
+  - `active` / `on_trial` → active, as before.
+
+Existing users are re-evaluated at runtime, so enabling strict mode takes effect on the next startup / reconcile / subscription webhook.
+
 ### `log`
 
 | Key | Type | Default | Description |
@@ -246,6 +263,8 @@ Periodic sync interval for refreshing pricing and variant data from the provider
 
 ```yaml
 env: prod
+
+strict_access: false
 
 server:
   host: 0.0.0.0
