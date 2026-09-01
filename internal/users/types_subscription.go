@@ -13,6 +13,7 @@ type UserSubscription struct {
 	TrialEndsAt *int64          `json:"trial_ends_at" description:"Unix timestamp when trial ends (if on trial)"`
 	RenewsAt    *int64          `json:"renews_at"     description:"Unix timestamp when subscription renews"`
 	EndsAt      *int64          `json:"ends_at"       description:"Unix timestamp when subscription ends (if cancelled)"`
+	RefundedAt  *int64          `json:"refunded_at"   description:"Unix timestamp when the subscription was refunded; access is revoked regardless of status"`
 	Cancelled   bool            `json:"cancelled"     description:"Whether the subscription has been cancelled"                                  required:"true"`
 	Raw         RawSubscription `json:"raw"           description:"Raw provider-specific subscription data"                                  required:"true"`
 }
@@ -59,6 +60,7 @@ type LemonSqueezySubscription struct {
 	RenewalIntervalQuantity int    `json:"renewal_interval_quantity" description:"Number of intervals between billings"            required:"true"`
 	RenewsAt                int64  `json:"renews_at"                 description:"Unix timestamp when subscription renews"         required:"true"`
 	EndsAt                  *int64 `json:"ends_at"                   description:"Unix timestamp when subscription ends"`
+	RefundedAt              *int64 `json:"refunded_at"               description:"Unix timestamp when the subscription was refunded"`
 	CreatedAt               int64  `json:"created_at"                description:"Unix timestamp when subscription was created"    required:"true"`
 	UpdatedAt               int64  `json:"updated_at"                description:"Unix timestamp when subscription was last updated" required:"true"`
 }
@@ -89,6 +91,7 @@ func ToRawSubscription(sub *subscriptions.Subscription) RawSubscription {
 			RenewalIntervalQuantity: sub.RenewalIntervalQuantity,
 			RenewsAt:                sub.RenewsAt,
 			EndsAt:                  sub.EndsAt,
+			RefundedAt:              sub.RefundedAt,
 			CreatedAt:               sub.CreatedAt,
 			UpdatedAt:               sub.UpdatedAt,
 		}},
@@ -103,6 +106,7 @@ func ToUserSubscription(sub *subscriptions.Subscription, planID string) *UserSub
 		TrialEndsAt: sub.TrialEndsAt,
 		RenewsAt:    &sub.RenewsAt,
 		EndsAt:      sub.EndsAt,
+		RefundedAt:  sub.RefundedAt,
 		Cancelled:   sub.Cancelled,
 		Raw:         ToRawSubscription(sub),
 	}

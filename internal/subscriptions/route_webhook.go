@@ -33,6 +33,16 @@ type SubscriptionObserver interface {
 // SubscriptionWriter writes subscription data.
 type SubscriptionWriter interface {
 	UpsertSubscription(ctx context.Context, sub *Subscription) error
+	MarkRefundedBySubscriptionID(
+		ctx context.Context,
+		subscriptionID int,
+		at int64,
+	) (*Subscription, error)
+	MarkRefundedByOrderID(
+		ctx context.Context,
+		orderID int,
+		at int64,
+	) (*Subscription, error)
 }
 
 // WebhookVerifier verifies incoming webhook signatures.
@@ -137,12 +147,104 @@ func (route *RouteWebhook) Handler() http.Handler {
 			httptools.WriteStatus(w, http.StatusOK)
 			return
 
+		case lemonsqueezy.WebhookEventSubscriptionPaymentRefunded:
+			var request lemonsqueezy.WebhookRequestSubscriptionInvoice
+			if err := json.Unmarshal(payload, &request); err != nil {
+				log.Info("failed to unmarshal webhook payload", "error", err)
+				httptools.WriteStatus(w, http.StatusBadRequest)
+				return
+			}
+			log.Debug(eventName, "request", request)
+			sub, err := route.repo.MarkRefundedBySubscriptionID(
+				r.Context(),
+				request.Data.Attributes.SubscriptionID,
+				refundedAt(request.Data.Attributes.RefundedAt),
+			)
+			route.finishRefund(w, r, eventName, sub, err)
+			return
+
+		case lemonsqueezy.WebhookEventOrderRefunded:
+			var request lemonsqueezy.WebhookRequestOrder
+			if err := json.Unmarshal(payload, &request); err != nil {
+				log.Info("failed to unmarshal webhook payload", "error", err)
+				httptools.WriteStatus(w, http.StatusBadRequest)
+				return
+			}
+			log.Debug(eventName, "request", request)
+			orderID, err := strconv.Atoi(request.Data.ID)
+			if err != nil {
+				log.Info(
+					"invalid order id in webhook payload",
+					"error", err,
+					"order_id", request.Data.ID,
+				)
+				httptools.WriteStatus(w, http.StatusBadRequest)
+				return
+			}
+			sub, err := route.repo.MarkRefundedByOrderID(
+				r.Context(),
+				orderID,
+				refundedAt(request.Data.Attributes.RefundedAt),
+			)
+			route.finishRefund(w, r, eventName, sub, err)
+			return
+
 		default:
 			log.Info("invalid event", "event", eventName, "payload", string(payload))
 			httptools.WriteStatus(w, http.StatusBadRequest)
 			return
 		}
 	})
+}
+
+// finishRefund revokes access for a subscription that was just marked refunded
+// and writes the response.
+//
+// A refund that matched no row answers 500 so the provider retries: webhook
+// delivery is not ordered, and a refund arriving before its
+// subscription_created must not be dropped silently. Provider retries are
+// bounded, so a refund of a product this service does not track cannot loop.
+func (route *RouteWebhook) finishRefund(
+	w http.ResponseWriter,
+	r *http.Request,
+	eventName string,
+	sub *Subscription,
+	err error,
+) {
+	log := logger.FromContext(r.Context())
+
+	if err != nil {
+		log.Error(
+			"failed to mark subscription refunded",
+			"error", err,
+			"event", eventName,
+		)
+		httptools.WriteStatus(w, http.StatusInternalServerError)
+		return
+	}
+
+	if sub == nil {
+		log.Warn("refund for unknown subscription", "event", eventName)
+		httptools.WriteStatus(w, http.StatusInternalServerError)
+		return
+	}
+
+	if err := route.notifyObserver(r.Context(), sub); err != nil {
+		log.Info("failed to update entitlements", "error", err)
+		httptools.WriteStatus(w, http.StatusInternalServerError)
+		return
+	}
+
+	httptools.WriteStatus(w, http.StatusOK)
+}
+
+// refundedAt falls back to now when the provider omits the refund timestamp:
+// refunded_at doubles as the revocation flag, so it must never stay NULL.
+func refundedAt(t *time.Time) int64 {
+	if t == nil || t.IsZero() {
+		return time.Now().Unix()
+	}
+	return t.Unix()
 }
 
 func (route *RouteWebhook) notifyObserver(

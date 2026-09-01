@@ -823,6 +823,13 @@
             "description": "Product display name",
             "type": "string"
           },
+          "refunded_at": {
+            "description": "Unix timestamp when the subscription was refunded",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
           "renewal_interval_quantity": {
             "description": "Number of intervals between billings",
             "type": "integer"
@@ -1143,6 +1150,13 @@
           "raw": {
             "$ref": "#/components/schemas/RawSubscription",
             "description": "Raw provider-specific subscription data"
+          },
+          "refunded_at": {
+            "description": "Unix timestamp when the subscription was refunded; access is revoked regardless of status",
+            "type": [
+              "null",
+              "integer"
+            ]
           },
           "renews_at": {
             "description": "Unix timestamp when subscription renews",

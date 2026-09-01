@@ -49,8 +49,8 @@ func startPostgresContainer(ctx context.Context) (string, testcontainers.Contain
 	return connStr, container, nil
 }
 
-func newPostgresRepo(baseURL string) func(t *testing.T) *subscriptions.Repo {
-	return func(t *testing.T) *subscriptions.Repo {
+func newPostgresRepo(baseURL string) func(t *testing.T, strictAccess bool) *subscriptions.Repo {
+	return func(t *testing.T, strictAccess bool) *subscriptions.Repo {
 		t.Helper()
 
 		n := pgDBCounter.Add(1)
@@ -82,7 +82,7 @@ func newPostgresRepo(baseURL string) func(t *testing.T) *subscriptions.Repo {
 
 		t.Cleanup(func() { database.Close() })
 
-		return subscriptions.NewRepo(database, true)
+		return subscriptions.NewRepo(database, strictAccess)
 	}
 }
 

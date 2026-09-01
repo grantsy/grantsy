@@ -10,7 +10,7 @@ import (
 	"github.com/grantsy/grantsy/internal/subscriptions"
 )
 
-func newSQLiteRepo(t *testing.T) *subscriptions.Repo {
+func newSQLiteRepo(t *testing.T, strictAccess bool) *subscriptions.Repo {
 	t.Helper()
 
 	dsn := filepath.Join(t.TempDir(), "test.db")
@@ -23,5 +23,5 @@ func newSQLiteRepo(t *testing.T) *subscriptions.Repo {
 
 	t.Cleanup(func() { database.Close() })
 
-	return subscriptions.NewRepo(database, true)
+	return subscriptions.NewRepo(database, strictAccess)
 }

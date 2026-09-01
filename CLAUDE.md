@@ -118,7 +118,7 @@ GET /v1/users/{user_id}?expand=plan,features,subscription
 ```
 POST /v1/webhook/lemonsqueezy
 ```
-Validates signature via SDK. Handles `subscription_created` and `subscription_updated` events.
+Validates signature via SDK. Handles `subscription_created`, `subscription_updated`, `subscription_payment_refunded` and `order_refunded` events. Refunds stamp `refunded_at`, which revokes access (Casbin grouping dropped, outgoing plan-update webhook fired); a refund matching no known subscription answers 500 so the provider retries.
 
 ### Infrastructure (hidden from external)
 
@@ -204,9 +204,12 @@ CREATE TABLE subscriptions_lemonsqueezy (
     renews_at INTEGER,
     ends_at INTEGER,
     has_successful_payment BOOLEAN NOT NULL DEFAULT FALSE, -- sticky: ever seen "active"
+    refunded_at INTEGER,           -- local revocation flag, set by refund webhooks
     ...
 );
 ```
+
+A refunded subscription is never active, whatever its provider status says.
 
 Active subscriptions (which statuses grant access) depend on `strict_access`:
 - `false` (default, lenient): `status IN ('on_trial', 'active', 'past_due', 'cancelled')`
@@ -214,7 +217,9 @@ Active subscriptions (which statuses grant access) depend on `strict_access`:
 
 `has_successful_payment` is a sticky boolean column set the first time a subscription is seen in status `active` (accumulated via `OR` in the upsert; backfilled to `TRUE` only for existing `active` rows). Internal only — not exposed via the API.
 
-The decision lives in `Subscription.IsActive(strictAccess)` and the mirrored `Repo.GetActiveUserPlans` query — both branch on the flag and must stay in sync.
+`refunded_at` is a local column: LemonSqueezy leaves a refunded subscription in its previous status, so refunds are recorded here by `subscription_payment_refunded` (matched on subscription ID) and `order_refunded` (matched on order ID). It is owned by those handlers — the regular upsert never writes it, only reads it back via `RETURNING` so a later `subscription_updated` cannot hand the plan back. The unique one-active-subscription-per-user index excludes refunded rows so a re-purchase can insert.
+
+The decision lives in `Subscription.IsActive(strictAccess)` and the mirrored `Repo.GetActiveUserPlans` query — both branch on the flag, both exclude refunded subscriptions, and must stay in sync.
 
 ---
 

@@ -12,8 +12,11 @@ import (
 )
 
 type dbFactory struct {
-	name  string
-	newDB func(t *testing.T) *subscriptions.Repo
+	name string
+	// newDB builds a repo against a fresh database. strictAccess is a
+	// parameter because GetActiveUserPlans branches on it in SQL, so both
+	// branches need coverage.
+	newDB func(t *testing.T, strictAccess bool) *subscriptions.Repo
 }
 
 var drivers []dbFactory

@@ -39,9 +39,45 @@ type Subscription struct {
 	// keep past_due access for paying customers in strict mode. Internal only —
 	// not exposed via the API.
 	HasSuccessfulPayment bool
+	// RefundedAt is set when the provider reports a refund for this
+	// subscription (a refunded subscription invoice, or a refund of the
+	// original order). LemonSqueezy leaves the subscription status untouched on
+	// a refund, so this is a local flag: it is written only by the refund
+	// webhooks and never overwritten by the regular upsert.
+	RefundedAt *int64
+}
+
+// subscriptionColumns is the full column list of subscriptions_lemonsqueezy,
+// ordered to match scanSubscription.
+const subscriptionColumns = `id, user_id, customer_id, order_id, product_id, product_name,
+			variant_id, variant_name, status, status_formatted,
+			card_brand, card_last_four, cancelled, trial_ends_at,
+			billing_anchor, subscription_item_id, renews_at, ends_at,
+			created_at, updated_at,
+			price_id, unit_price, renewal_interval_unit, renewal_interval_quantity,
+			has_successful_payment, refunded_at`
+
+func scanSubscription(row *sql.Row) (*Subscription, error) {
+	var sub Subscription
+	err := row.Scan(
+		&sub.ID, &sub.UserID, &sub.CustomerID, &sub.OrderID, &sub.ProductID, &sub.ProductName,
+		&sub.VariantID, &sub.VariantName, &sub.Status, &sub.StatusFormatted,
+		&sub.CardBrand, &sub.CardLastFour, &sub.Cancelled, &sub.TrialEndsAt,
+		&sub.BillingAnchor, &sub.SubscriptionItemID, &sub.RenewsAt, &sub.EndsAt,
+		&sub.CreatedAt, &sub.UpdatedAt,
+		&sub.PriceID, &sub.UnitPrice, &sub.RenewalIntervalUnit, &sub.RenewalIntervalQuantity,
+		&sub.HasSuccessfulPayment, &sub.RefundedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &sub, nil
 }
 
 // IsActive returns true if the subscription grants access.
+//
+// A refund revokes access outright, whatever the provider status says: the
+// provider keeps a refunded subscription in its previous status.
 //
 // on_trial / active / cancelled always grant access (cancelled keeps access
 // through its grace period; LemonSqueezy moves it to "expired" once that ends).
@@ -57,6 +93,9 @@ type Subscription struct {
 // NOTE: the past_due rule is mirrored in Repo.GetActiveUserPlans (SQL) — keep
 // the two in sync.
 func (s *Subscription) IsActive(strictAccess bool) bool {
+	if s.RefundedAt != nil {
+		return false
+	}
 	switch s.Status {
 	case "on_trial", "active", "cancelled":
 		return true
@@ -115,12 +154,18 @@ func (r *Repo) UpsertSubscription(
 			renewal_interval_unit = excluded.renewal_interval_unit,
 			renewal_interval_quantity = excluded.renewal_interval_quantity,
 			has_successful_payment = %[1]s.has_successful_payment OR excluded.has_successful_payment
-		RETURNING has_successful_payment
+		RETURNING has_successful_payment, refunded_at
 	`, table))
 
+	// refunded_at is deliberately absent from both the insert list and the
+	// update list: it is owned by the refund webhooks, and a later routine
+	// subscription_updated must not clear it.
+	//
 	// RETURNING gives back the accumulated (sticky) flag in one round-trip, so
 	// the in-memory sub reflects the persisted value — e.g. a past_due event on
 	// a previously-active subscription still sees has_successful_payment = true.
+	// The same applies to refunded_at: without it a subscription_updated
+	// arriving after a refund would report IsActive and hand the plan back.
 	if err := r.db.QueryRowContext(
 		ctx,
 		query,
@@ -149,7 +194,7 @@ func (r *Repo) UpsertSubscription(
 		sub.RenewalIntervalUnit,
 		sub.RenewalIntervalQuantity,
 		sub.Status == "active",
-	).Scan(&sub.HasSuccessfulPayment); err != nil {
+	).Scan(&sub.HasSuccessfulPayment, &sub.RefundedAt); err != nil {
 		return fmt.Errorf("billing: failed to upsert subscription: %w", err)
 	}
 
@@ -162,36 +207,83 @@ func (r *Repo) GetSubscriptionByUserID(
 ) (*Subscription, error) {
 	table := r.db.TableName("subscriptions_lemonsqueezy")
 	query := r.db.Rebind(fmt.Sprintf(`
-		SELECT id, user_id, customer_id, order_id, product_id, product_name,
-			variant_id, variant_name, status, status_formatted,
-			card_brand, card_last_four, cancelled, trial_ends_at,
-			billing_anchor, subscription_item_id, renews_at, ends_at,
-			created_at, updated_at,
-			price_id, unit_price, renewal_interval_unit, renewal_interval_quantity
+		SELECT %s
 		FROM %s
 		WHERE user_id = $1
 		ORDER BY
-			CASE WHEN status IN ('on_trial', 'active', 'past_due', 'cancelled') THEN 0 ELSE 1 END,
+			CASE WHEN refunded_at IS NULL
+				AND status IN ('on_trial', 'active', 'past_due', 'cancelled')
+				THEN 0 ELSE 1 END,
 			updated_at DESC
 		LIMIT 1
-	`, table))
+	`, subscriptionColumns, table))
 
-	var sub Subscription
-	err := r.db.QueryRowContext(ctx, query, userID).Scan(
-		&sub.ID, &sub.UserID, &sub.CustomerID, &sub.OrderID, &sub.ProductID, &sub.ProductName,
-		&sub.VariantID, &sub.VariantName, &sub.Status, &sub.StatusFormatted,
-		&sub.CardBrand, &sub.CardLastFour, &sub.Cancelled, &sub.TrialEndsAt,
-		&sub.BillingAnchor, &sub.SubscriptionItemID, &sub.RenewsAt, &sub.EndsAt,
-		&sub.CreatedAt, &sub.UpdatedAt,
-		&sub.PriceID, &sub.UnitPrice, &sub.RenewalIntervalUnit, &sub.RenewalIntervalQuantity,
-	)
+	sub, err := scanSubscription(r.db.QueryRowContext(ctx, query, userID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return &sub, nil
+	return sub, nil
+}
+
+// MarkRefundedBySubscriptionID flags a subscription as refunded by its provider
+// subscription ID — the key carried by subscription_payment_refunded, which
+// covers refunds of renewal invoices.
+func (r *Repo) MarkRefundedBySubscriptionID(
+	ctx context.Context,
+	subscriptionID int,
+	at int64,
+) (*Subscription, error) {
+	return r.markRefunded(ctx, "id", subscriptionID, at)
+}
+
+// MarkRefundedByOrderID flags a subscription as refunded by its order ID — the
+// key carried by order_refunded, which covers refunds of the original order.
+// One-time products have no row here, so such refunds simply match nothing.
+func (r *Repo) MarkRefundedByOrderID(
+	ctx context.Context,
+	orderID int,
+	at int64,
+) (*Subscription, error) {
+	return r.markRefunded(ctx, "order_id", orderID, at)
+}
+
+// markRefunded stamps refunded_at and returns the affected subscription, or nil
+// if no row matched. column is a package-internal constant, never user input.
+//
+// COALESCE keeps the first refund timestamp, which makes a webhook redelivery a
+// no-op that still returns the subscription — so "already refunded" and
+// "unknown subscription" stay distinguishable by the caller.
+func (r *Repo) markRefunded(
+	ctx context.Context,
+	column string,
+	id int,
+	at int64,
+) (*Subscription, error) {
+	table := r.db.TableName("subscriptions_lemonsqueezy")
+
+	// Placeholders must appear in argument order: Rebind rewrites $N to ? for
+	// SQLite positionally, ignoring the number. Hence "at" is $1, not $2.
+	query := r.db.Rebind(fmt.Sprintf(`
+		UPDATE %s
+		SET refunded_at = COALESCE(refunded_at, $1)
+		WHERE %s = $2
+		RETURNING %s
+	`, table, column, subscriptionColumns))
+
+	sub, err := scanSubscription(r.db.QueryRowContext(ctx, query, at, id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf(
+			"subscriptions: failed to mark subscription refunded: %w",
+			err,
+		)
+	}
+	return sub, nil
 }
 
 func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
@@ -201,6 +293,8 @@ func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 	// Lenient grants access to on_trial/active/past_due/cancelled. Strict keeps
 	// past_due only for subscriptions that have had a successful payment
 	// (has_successful_payment), mirroring the past_due branch in IsActive.
+	// Both modes exclude refunded subscriptions, mirroring the refund check
+	// that opens IsActive.
 	predicate := "status IN ('on_trial', 'active', 'past_due', 'cancelled')"
 	if r.strictAccess {
 		predicate = "(status IN ('on_trial', 'active', 'cancelled') " +
@@ -210,6 +304,7 @@ func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 		SELECT user_id, product_id
 		FROM %s
 		WHERE product_id IS NOT NULL
+		  AND refunded_at IS NULL
 		  AND %s
 		ORDER BY user_id, updated_at DESC
 	`, table, predicate)

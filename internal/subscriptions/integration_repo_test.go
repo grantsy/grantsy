@@ -14,7 +14,7 @@ func TestRepoIntegration(t *testing.T) {
 		t.Run(drv.name, func(t *testing.T) {
 			t.Run("UpsertSubscription", func(t *testing.T) {
 				t.Run("insert_new", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "active")
@@ -30,7 +30,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("update_existing", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "active")
@@ -54,7 +54,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("all_fields_roundtrip", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					trialEnd := time.Now().Add(14 * 24 * time.Hour).Unix()
@@ -96,7 +96,7 @@ func TestRepoIntegration(t *testing.T) {
 
 			t.Run("GetSubscriptionByUserID", func(t *testing.T) {
 				t.Run("found", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "active")
@@ -109,7 +109,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("not_found", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					got, err := repo.GetSubscriptionByUserID(ctx, "nonexistent")
@@ -118,7 +118,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("nil_optional_fields", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "active")
@@ -136,7 +136,7 @@ func TestRepoIntegration(t *testing.T) {
 
 			t.Run("GetActiveUserPlans", func(t *testing.T) {
 				t.Run("empty_table", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					plans, err := repo.GetActiveUserPlans(ctx)
@@ -145,7 +145,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("active_subscription", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "active")
@@ -158,7 +158,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("on_trial_subscription", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "on_trial")
@@ -171,7 +171,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("cancelled_with_future_ends_at", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					future := time.Now().Add(30 * 24 * time.Hour).Unix()
@@ -186,7 +186,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("expired_subscription_excluded", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "expired")
@@ -199,7 +199,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("paused_subscription_excluded", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub := testSub(1, "user-1", "paused")
@@ -212,7 +212,7 @@ func TestRepoIntegration(t *testing.T) {
 				})
 
 				t.Run("multiple_users_mixed_statuses", func(t *testing.T) {
-					repo := drv.newDB(t)
+					repo := drv.newDB(t, true)
 					ctx := context.Background()
 
 					sub1 := testSub(1, "user-active", "active")
@@ -237,6 +237,196 @@ func TestRepoIntegration(t *testing.T) {
 					assert.Equal(t, 12345, plans["user-cancelled-future"])
 					_, exists := plans["user-expired"]
 					assert.False(t, exists)
+				})
+			})
+
+			t.Run("Refunds", func(t *testing.T) {
+				// The regular upsert must never clear refunded_at, and must read
+				// it back: LemonSqueezy keeps sending subscription_updated with
+				// status "active" after a refund, and an in-memory sub with a
+				// nil RefundedAt would report IsActive and hand the plan back.
+				t.Run("upsert_preserves_refunded_at", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-1", "active")))
+
+					refundedAt := time.Now().Unix()
+					_, err := repo.MarkRefundedBySubscriptionID(ctx, 1, refundedAt)
+					require.NoError(t, err)
+
+					// A routine update arriving after the refund.
+					fresh := testSub(1, "user-1", "active")
+					require.Nil(t, fresh.RefundedAt)
+					require.NoError(t, repo.UpsertSubscription(ctx, fresh))
+
+					require.NotNil(t, fresh.RefundedAt, "upsert must return the persisted refunded_at")
+					assert.Equal(t, refundedAt, *fresh.RefundedAt)
+					assert.False(t, fresh.IsActive(true))
+
+					got, err := repo.GetSubscriptionByUserID(ctx, "user-1")
+					require.NoError(t, err)
+					require.NotNil(t, got.RefundedAt)
+					assert.Equal(t, refundedAt, *got.RefundedAt)
+
+					plans, err := repo.GetActiveUserPlans(ctx)
+					require.NoError(t, err)
+					assert.Empty(t, plans)
+				})
+
+				t.Run("mark_by_subscription_id", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-1", "active")))
+
+					refundedAt := time.Now().Unix()
+					got, err := repo.MarkRefundedBySubscriptionID(ctx, 1, refundedAt)
+					require.NoError(t, err)
+					require.NotNil(t, got)
+					assert.Equal(t, "user-1", got.UserID)
+					assert.Equal(t, 12345, got.ProductID)
+					require.NotNil(t, got.RefundedAt)
+					assert.Equal(t, refundedAt, *got.RefundedAt)
+				})
+
+				t.Run("mark_by_order_id", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					sub := testSub(1, "user-1", "active")
+					require.NoError(t, repo.UpsertSubscription(ctx, sub))
+
+					refundedAt := time.Now().Unix()
+					got, err := repo.MarkRefundedByOrderID(ctx, sub.OrderID, refundedAt)
+					require.NoError(t, err)
+					require.NotNil(t, got)
+					assert.Equal(t, 1, got.ID)
+					assert.Equal(t, "user-1", got.UserID)
+					require.NotNil(t, got.RefundedAt)
+					assert.Equal(t, refundedAt, *got.RefundedAt)
+				})
+
+				// A refund for something this service does not track is not an
+				// error — the caller distinguishes it by the nil subscription.
+				t.Run("unknown_subscription_id", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					got, err := repo.MarkRefundedBySubscriptionID(ctx, 999, time.Now().Unix())
+					require.NoError(t, err)
+					assert.Nil(t, got)
+				})
+
+				t.Run("unknown_order_id", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					got, err := repo.MarkRefundedByOrderID(ctx, 999, time.Now().Unix())
+					require.NoError(t, err)
+					assert.Nil(t, got)
+				})
+
+				// Providers redeliver webhooks: a repeat must keep the original
+				// timestamp and still return the subscription.
+				t.Run("idempotent", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-1", "active")))
+
+					first := time.Now().Unix()
+					_, err := repo.MarkRefundedBySubscriptionID(ctx, 1, first)
+					require.NoError(t, err)
+
+					got, err := repo.MarkRefundedBySubscriptionID(ctx, 1, first+3600)
+					require.NoError(t, err)
+					require.NotNil(t, got)
+					require.NotNil(t, got.RefundedAt)
+					assert.Equal(t, first, *got.RefundedAt)
+				})
+
+				t.Run("excluded_from_active_plans_strict", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-refunded", "active")))
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(2, "user-ok", "active")))
+
+					_, err := repo.MarkRefundedBySubscriptionID(ctx, 1, time.Now().Unix())
+					require.NoError(t, err)
+
+					plans, err := repo.GetActiveUserPlans(ctx)
+					require.NoError(t, err)
+					assert.Equal(t, map[string]int{"user-ok": 12345}, plans)
+				})
+
+				// The lenient predicate is a separate SQL branch, and past_due
+				// only grants access there, so it needs its own case.
+				t.Run("excluded_from_active_plans_lenient", func(t *testing.T) {
+					repo := drv.newDB(t, false)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-refunded", "past_due")))
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(2, "user-ok", "past_due")))
+
+					plans, err := repo.GetActiveUserPlans(ctx)
+					require.NoError(t, err)
+					assert.Len(t, plans, 2, "past_due grants access in lenient mode")
+
+					_, err = repo.MarkRefundedBySubscriptionID(ctx, 1, time.Now().Unix())
+					require.NoError(t, err)
+
+					plans, err = repo.GetActiveUserPlans(ctx)
+					require.NoError(t, err)
+					assert.Equal(t, map[string]int{"user-ok": 12345}, plans)
+				})
+
+				// Re-subscribing after a refund produces a new provider
+				// subscription ID for the same user. The unique
+				// one-active-subscription-per-user index must let it in, which
+				// it only does because refunded rows are outside the index.
+				t.Run("repurchase_after_refund", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-1", "active")))
+					_, err := repo.MarkRefundedBySubscriptionID(ctx, 1, time.Now().Unix())
+					require.NoError(t, err)
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(2, "user-1", "active")))
+
+					plans, err := repo.GetActiveUserPlans(ctx)
+					require.NoError(t, err)
+					assert.Equal(t, map[string]int{"user-1": 12345}, plans)
+				})
+
+				// A refunded row must not outrank a live one for the same user.
+				t.Run("ranks_below_live_subscription", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-1", "active")))
+					_, err := repo.MarkRefundedBySubscriptionID(ctx, 1, time.Now().Unix())
+					require.NoError(t, err)
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(2, "user-1", "active")))
+
+					got, err := repo.GetSubscriptionByUserID(ctx, "user-1")
+					require.NoError(t, err)
+					assert.Equal(t, 2, got.ID)
+					assert.Nil(t, got.RefundedAt)
+				})
+
+				t.Run("nil_when_never_refunded", func(t *testing.T) {
+					repo := drv.newDB(t, true)
+					ctx := context.Background()
+
+					require.NoError(t, repo.UpsertSubscription(ctx, testSub(1, "user-1", "active")))
+
+					got, err := repo.GetSubscriptionByUserID(ctx, "user-1")
+					require.NoError(t, err)
+					assert.Nil(t, got.RefundedAt)
+					assert.True(t, got.IsActive(true))
 				})
 			})
 		})

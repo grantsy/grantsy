@@ -1,6 +1,7 @@
 package subscriptions_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -411,4 +412,284 @@ func TestRouteWebhook_Success_Updated(t *testing.T) {
 	handler.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// --- Refund webhook tests ---
+
+func paymentRefundedPayload(t *testing.T, subscriptionID int, refundedAt *time.Time) string {
+	t.Helper()
+	req := lemonsqueezy.WebhookRequestSubscriptionInvoice{
+		Meta: lemonsqueezy.WebhookRequestMeta{
+			EventName: lemonsqueezy.WebhookEventSubscriptionPaymentRefunded,
+		},
+		Data: lemonsqueezy.WebhookRequestData[lemonsqueezy.SubscriptionInvoiceAttributes, lemonsqueezy.APIResponseRelationshipsSubscriptionInvoice]{
+			ID: "777",
+			Attributes: lemonsqueezy.SubscriptionInvoiceAttributes{
+				SubscriptionID: subscriptionID,
+				BillingReason:  "renewal",
+				Status:         "refunded",
+				Refunded:       true,
+				RefundedAt:     refundedAt,
+			},
+		},
+	}
+	b, err := json.Marshal(req)
+	require.NoError(t, err)
+	return string(b)
+}
+
+func orderRefundedPayload(t *testing.T, orderID string, refundedAt *time.Time) string {
+	t.Helper()
+	req := lemonsqueezy.WebhookRequestOrder{
+		Meta: lemonsqueezy.WebhookRequestMeta{
+			EventName:  lemonsqueezy.WebhookEventOrderRefunded,
+			CustomData: map[string]any{"user_id": "user-123"},
+		},
+		Data: lemonsqueezy.WebhookRequestData[lemonsqueezy.OrderAttributes, lemonsqueezy.APIResponseRelationshipsOrder]{
+			ID: orderID,
+			Attributes: lemonsqueezy.OrderAttributes{
+				Status:     "refunded",
+				Refunded:   true,
+				RefundedAt: refundedAt,
+			},
+		},
+	}
+	b, err := json.Marshal(req)
+	require.NoError(t, err)
+	return string(b)
+}
+
+// refundedSub is what the repo hands back after stamping refunded_at: the
+// provider status is untouched, so only RefundedAt makes it inactive.
+func refundedSub(at int64) *subscriptions.Subscription {
+	return &subscriptions.Subscription{
+		ID:         42,
+		UserID:     "user-123",
+		ProductID:  300,
+		OrderID:    2042,
+		Status:     "active",
+		RefundedAt: &at,
+	}
+}
+
+func refundRequest(t *testing.T, body, eventName string) *http.Request {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/v1/webhook/lemonsqueezy", strings.NewReader(body))
+	req.Header.Set("X-Signature", "valid-sig")
+	req.Header.Set("X-Event-Name", eventName)
+	return req
+}
+
+func TestRouteWebhook_PaymentRefunded_Success(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := paymentRefundedPayload(t, 42, &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedBySubscriptionID(mock.Anything, 42, refundTime.Unix()).
+		Return(refundedSub(refundTime.Unix()), nil)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, "user-123", 300, false, mock.Anything).
+		Return(nil)
+
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventSubscriptionPaymentRefunded))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRouteWebhook_OrderRefunded_Success(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := orderRefundedPayload(t, "2042", &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedByOrderID(mock.Anything, 2042, refundTime.Unix()).
+		Return(refundedSub(refundTime.Unix()), nil)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, "user-123", 300, false, mock.Anything).
+		Return(nil)
+
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventOrderRefunded))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// refunded_at doubles as the revocation flag, so a payload without a timestamp
+// must still produce one rather than leaving the column NULL.
+func TestRouteWebhook_PaymentRefunded_MissingRefundedAt(t *testing.T) {
+	body := paymentRefundedPayload(t, 42, nil)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	var gotAt int64
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedBySubscriptionID(mock.Anything, 42, mock.Anything).
+		Run(func(_ context.Context, _ int, at int64) { gotAt = at }).
+		Return(refundedSub(1), nil)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, "user-123", 300, false, mock.Anything).
+		Return(nil)
+
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	before := time.Now().Unix()
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventSubscriptionPaymentRefunded))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.GreaterOrEqual(t, gotAt, before)
+	assert.LessOrEqual(t, gotAt, time.Now().Unix())
+}
+
+// A refund matching no row answers 500 on purpose: webhook delivery is not
+// ordered, so the provider must retry rather than have the refund dropped.
+func TestRouteWebhook_PaymentRefunded_UnknownSubscription(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := paymentRefundedPayload(t, 42, &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedBySubscriptionID(mock.Anything, 42, refundTime.Unix()).
+		Return(nil, nil)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventSubscriptionPaymentRefunded))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestRouteWebhook_OrderRefunded_UnknownOrder(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := orderRefundedPayload(t, "2042", &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedByOrderID(mock.Anything, 2042, refundTime.Unix()).
+		Return(nil, nil)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventOrderRefunded))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestRouteWebhook_PaymentRefunded_RepoError(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := paymentRefundedPayload(t, 42, &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedBySubscriptionID(mock.Anything, 42, refundTime.Unix()).
+		Return(nil, assert.AnError)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventSubscriptionPaymentRefunded))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestRouteWebhook_PaymentRefunded_ObserverError(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := paymentRefundedPayload(t, 42, &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	writer.EXPECT().
+		MarkRefundedBySubscriptionID(mock.Anything, 42, refundTime.Unix()).
+		Return(refundedSub(refundTime.Unix()), nil)
+
+	observer := mocks.NewMockSubscriptionObserver(t)
+	observer.EXPECT().
+		OnSubscriptionChange(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(assert.AnError)
+
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventSubscriptionPaymentRefunded))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestRouteWebhook_PaymentRefunded_InvalidPayload(t *testing.T) {
+	body := "not-json"
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	observer := mocks.NewMockSubscriptionObserver(t)
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventSubscriptionPaymentRefunded))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// The order ID is a string in the payload and an integer column here.
+func TestRouteWebhook_OrderRefunded_InvalidOrderID(t *testing.T) {
+	refundTime := time.Date(2024, 8, 1, 12, 0, 0, 0, time.UTC)
+	body := orderRefundedPayload(t, "not-a-number", &refundTime)
+
+	verifier := mocks.NewMockWebhookVerifier(t)
+	verifier.EXPECT().VerifyWebhook(mock.Anything, "valid-sig", []byte(body)).Return(true)
+
+	writer := mocks.NewMockSubscriptionWriter(t)
+	observer := mocks.NewMockSubscriptionObserver(t)
+	pricing := mocks.NewMockPriceFetcher(t)
+	route := subscriptions.NewRouteWebhook(verifier, pricing, writer, observer, false)
+
+	w := httptest.NewRecorder()
+	route.Handler().ServeHTTP(w, refundRequest(t, body, lemonsqueezy.WebhookEventOrderRefunded))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }

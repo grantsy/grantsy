@@ -22,6 +22,126 @@ func (_m *MockSubscriptionWriter) EXPECT() *MockSubscriptionWriter_Expecter {
 	return &MockSubscriptionWriter_Expecter{mock: &_m.Mock}
 }
 
+// MarkRefundedByOrderID provides a mock function with given fields: ctx, orderID, at
+func (_m *MockSubscriptionWriter) MarkRefundedByOrderID(ctx context.Context, orderID int, at int64) (*subscriptions.Subscription, error) {
+	ret := _m.Called(ctx, orderID, at)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkRefundedByOrderID")
+	}
+
+	var r0 *subscriptions.Subscription
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, int64) (*subscriptions.Subscription, error)); ok {
+		return rf(ctx, orderID, at)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int, int64) *subscriptions.Subscription); ok {
+		r0 = rf(ctx, orderID, at)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*subscriptions.Subscription)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int, int64) error); ok {
+		r1 = rf(ctx, orderID, at)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockSubscriptionWriter_MarkRefundedByOrderID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkRefundedByOrderID'
+type MockSubscriptionWriter_MarkRefundedByOrderID_Call struct {
+	*mock.Call
+}
+
+// MarkRefundedByOrderID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orderID int
+//   - at int64
+func (_e *MockSubscriptionWriter_Expecter) MarkRefundedByOrderID(ctx interface{}, orderID interface{}, at interface{}) *MockSubscriptionWriter_MarkRefundedByOrderID_Call {
+	return &MockSubscriptionWriter_MarkRefundedByOrderID_Call{Call: _e.mock.On("MarkRefundedByOrderID", ctx, orderID, at)}
+}
+
+func (_c *MockSubscriptionWriter_MarkRefundedByOrderID_Call) Run(run func(ctx context.Context, orderID int, at int64)) *MockSubscriptionWriter_MarkRefundedByOrderID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(int), args[2].(int64))
+	})
+	return _c
+}
+
+func (_c *MockSubscriptionWriter_MarkRefundedByOrderID_Call) Return(_a0 *subscriptions.Subscription, _a1 error) *MockSubscriptionWriter_MarkRefundedByOrderID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockSubscriptionWriter_MarkRefundedByOrderID_Call) RunAndReturn(run func(context.Context, int, int64) (*subscriptions.Subscription, error)) *MockSubscriptionWriter_MarkRefundedByOrderID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// MarkRefundedBySubscriptionID provides a mock function with given fields: ctx, subscriptionID, at
+func (_m *MockSubscriptionWriter) MarkRefundedBySubscriptionID(ctx context.Context, subscriptionID int, at int64) (*subscriptions.Subscription, error) {
+	ret := _m.Called(ctx, subscriptionID, at)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkRefundedBySubscriptionID")
+	}
+
+	var r0 *subscriptions.Subscription
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, int64) (*subscriptions.Subscription, error)); ok {
+		return rf(ctx, subscriptionID, at)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int, int64) *subscriptions.Subscription); ok {
+		r0 = rf(ctx, subscriptionID, at)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*subscriptions.Subscription)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int, int64) error); ok {
+		r1 = rf(ctx, subscriptionID, at)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkRefundedBySubscriptionID'
+type MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call struct {
+	*mock.Call
+}
+
+// MarkRefundedBySubscriptionID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - subscriptionID int
+//   - at int64
+func (_e *MockSubscriptionWriter_Expecter) MarkRefundedBySubscriptionID(ctx interface{}, subscriptionID interface{}, at interface{}) *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call {
+	return &MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call{Call: _e.mock.On("MarkRefundedBySubscriptionID", ctx, subscriptionID, at)}
+}
+
+func (_c *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call) Run(run func(ctx context.Context, subscriptionID int, at int64)) *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(int), args[2].(int64))
+	})
+	return _c
+}
+
+func (_c *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call) Return(_a0 *subscriptions.Subscription, _a1 error) *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call) RunAndReturn(run func(context.Context, int, int64) (*subscriptions.Subscription, error)) *MockSubscriptionWriter_MarkRefundedBySubscriptionID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpsertSubscription provides a mock function with given fields: ctx, sub
 func (_m *MockSubscriptionWriter) UpsertSubscription(ctx context.Context, sub *subscriptions.Subscription) error {
 	ret := _m.Called(ctx, sub)
