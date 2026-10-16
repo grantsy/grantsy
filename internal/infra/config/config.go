@@ -85,6 +85,11 @@ type LemonSqueezyConfig struct {
 type ProductMapping struct {
 	ProductID int    `yaml:"product_id" validate:"required"`
 	PlanID    string `yaml:"plan_id"    validate:"required"`
+	// HideVariants keeps the product's variants out of the plan's variant
+	// list (GET /v1/plans). Subscriptions to the product still map to PlanID.
+	// For a product sold through its own flow (e.g. a per-seat team product)
+	// whose prices must not show up next to the plan's regular ones.
+	HideVariants bool `yaml:"hide_variants"`
 }
 
 // LemonSqueezyIncomingWebhook configures incoming webhook from LemonSqueezy

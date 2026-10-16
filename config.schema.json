@@ -162,6 +162,11 @@
                   "plan_id": {
                     "type": "string",
                     "description": "Plan ID to assign for this product"
+                  },
+                  "hide_variants": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Keep this product's variants out of the plan's variant list (GET /v1/plans), e.g. for a product sold through its own flow. Its subscriptions still map to plan_id."
                   }
                 }
               }
