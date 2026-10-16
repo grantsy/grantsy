@@ -20,8 +20,10 @@ import (
 type LemonSqueezyProvider struct {
 	client        *lemonsqueezy.Client
 	productToPlan map[int]string
-	mu            sync.RWMutex
-	cache         map[string][]entitlements.Variant
+	// hidden holds products whose variants are kept out of the plan list.
+	hidden map[int]bool
+	mu     sync.RWMutex
+	cache  map[string][]entitlements.Variant
 }
 
 func NewLemonSqueezyProvider(
@@ -30,8 +32,12 @@ func NewLemonSqueezyProvider(
 	products []config.ProductMapping,
 ) *LemonSqueezyProvider {
 	productToPlan := make(map[int]string, len(products))
+	hidden := make(map[int]bool)
 	for _, p := range products {
 		productToPlan[p.ProductID] = p.PlanID
+		if p.HideVariants {
+			hidden[p.ProductID] = true
+		}
 	}
 
 	return &LemonSqueezyProvider{
@@ -40,6 +46,7 @@ func NewLemonSqueezyProvider(
 			lemonsqueezy.WithSigningSecret(signingSecret),
 		),
 		productToPlan: productToPlan,
+		hidden:        hidden,
 		cache:         make(map[string][]entitlements.Variant),
 	}
 }
@@ -88,7 +95,7 @@ func (p *LemonSqueezyProvider) load(ctx context.Context) {
 		}
 
 		planID, ok := p.productToPlan[variant.Attributes.ProductID]
-		if !ok {
+		if !ok || p.hidden[variant.Attributes.ProductID] {
 			continue
 		}
 

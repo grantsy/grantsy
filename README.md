@@ -202,6 +202,7 @@ Resolution honors the header's quality ordering and prefers the most specific ma
 |-----|------|----------|-------------|
 | `product_id` | `int` | Yes | LemonSqueezy product ID |
 | `plan_id` | `string` | Yes | Plan ID to associate with this product |
+| `hide_variants` | `bool` | No | Keep the product's variants out of the plan's variant list (`GET /v1/plans`). Default `false`. Set `true` for a product sold through its own flow (e.g. a per-seat team product): its subscriptions still map to `plan_id`, but its prices stay out of the plan's list |
 
 ### `webhooks`
 

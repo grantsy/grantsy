@@ -61,6 +61,11 @@ providers:
         plan_id: pro
       - product_id: 67890
         plan_id: enterprise
+      # Grants "pro" but is sold through its own flow, so its variants are
+      # kept out of the "pro" plan's variant list.
+      - product_id: 24680
+        plan_id: pro
+        hide_variants: true
     webhook:
       secret: "${LEMONSQUEEZY_WEBHOOK_SECRET}"
     api_key: "${LEMONSQUEEZY_API_KEY}"
