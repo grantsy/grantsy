@@ -144,7 +144,20 @@ func (route *RouteWebhook) Handler() http.Handler {
 			sub.UnitPrice = price.UnitPrice
 			sub.RenewalIntervalUnit = price.RenewalIntervalUnit
 			sub.RenewalIntervalQuantity = price.RenewalIntervalQuantity
-			if err := route.repo.UpsertSubscription(r.Context(), sub); err != nil {
+			err = route.repo.UpsertSubscription(r.Context(), sub)
+			if errors.Is(err, ErrStaleUpdate) {
+				// Out-of-order delivery: a newer state is already stored and
+				// already applied to entitlements. Acknowledge so the provider
+				// stops retrying.
+				log.Info(
+					"skipped stale subscription event",
+					"subscription_id", sub.ID,
+					"event", eventName,
+				)
+				httptools.WriteStatus(w, http.StatusOK)
+				return
+			}
+			if err != nil {
 				log.Info("failed to upsert subscription", "error", err)
 				httptools.WriteStatus(w, http.StatusInternalServerError)
 				return
