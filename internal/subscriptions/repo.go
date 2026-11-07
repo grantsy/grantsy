@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/grantsy/grantsy/internal/infra/db"
 )
@@ -79,8 +80,10 @@ func scanSubscription(row *sql.Row) (*Subscription, error) {
 // A refund revokes access outright, whatever the provider status says: the
 // provider keeps a refunded subscription in its previous status.
 //
-// on_trial / active / cancelled always grant access (cancelled keeps access
-// through its grace period; LemonSqueezy moves it to "expired" once that ends).
+// on_trial / active always grant access. cancelled keeps access through its
+// grace period, i.e. until ends_at: LemonSqueezy moves it to "expired" once that
+// ends, but that event can be lost, and the subscription must not grant access
+// forever then. A cancelled subscription without ends_at keeps access.
 //
 // strictAccess only affects past_due. In lenient mode (false) past_due keeps
 // access during dunning. In strict mode (true) past_due keeps access only if
@@ -90,15 +93,17 @@ func scanSubscription(row *sql.Row) (*Subscription, error) {
 //
 // Everything else (expired, paused, unpaid, ...) is inactive.
 //
-// NOTE: the past_due rule is mirrored in Repo.GetActiveUserPlans (SQL) — keep
-// the two in sync.
+// NOTE: the past_due and cancelled rules are mirrored in Repo.GetActiveUserPlans
+// (SQL) — keep the two in sync.
 func (s *Subscription) IsActive(strictAccess bool) bool {
 	if s.RefundedAt != nil {
 		return false
 	}
 	switch s.Status {
-	case "on_trial", "active", "cancelled":
+	case "on_trial", "active":
 		return true
+	case "cancelled":
+		return s.EndsAt == nil || *s.EndsAt > time.Now().Unix()
 	case "past_due":
 		return !strictAccess || s.HasSuccessfulPayment
 	default:
@@ -294,22 +299,26 @@ func (r *Repo) GetActiveUserPlans(ctx context.Context) (map[string]int, error) {
 	// past_due only for subscriptions that have had a successful payment
 	// (has_successful_payment), mirroring the past_due branch in IsActive.
 	// Both modes exclude refunded subscriptions, mirroring the refund check
-	// that opens IsActive.
-	predicate := "status IN ('on_trial', 'active', 'past_due', 'cancelled')"
+	// that opens IsActive, and cancelled subscriptions past their ends_at,
+	// mirroring its cancelled branch ($1 is the current Unix time).
+	cancelled := "(status = 'cancelled' AND (ends_at IS NULL OR ends_at > $1))"
+	predicate := "(status IN ('on_trial', 'active', 'past_due') OR " +
+		cancelled + ")"
 	if r.strictAccess {
-		predicate = "(status IN ('on_trial', 'active', 'cancelled') " +
+		predicate = "(status IN ('on_trial', 'active') " +
+			"OR " + cancelled + " " +
 			"OR (status = 'past_due' AND has_successful_payment = TRUE))"
 	}
-	query := fmt.Sprintf(`
+	query := r.db.Rebind(fmt.Sprintf(`
 		SELECT user_id, product_id
 		FROM %s
 		WHERE product_id IS NOT NULL
 		  AND refunded_at IS NULL
 		  AND %s
 		ORDER BY user_id, updated_at DESC
-	`, table, predicate)
+	`, table, predicate))
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, time.Now().Unix())
 	if err != nil {
 		return nil, fmt.Errorf(
 			"subscriptions: failed to query active user plans: %w",

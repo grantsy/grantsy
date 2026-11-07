@@ -228,6 +228,15 @@ Optional outgoing webhooks to notify external services of subscription changes.
 
 Periodic sync interval for refreshing pricing and variant data from the provider (e.g. `15m`, `1h30m`). Leave empty to disable.
 
+### `reconcile_period`
+
+| | |
+|---|---|
+| **Type** | `string` |
+| **Default** | `""` (disabled) |
+
+Periodic interval for rebuilding user → plan assignments from the subscriptions table (e.g. `10m`). Webhooks update assignments immediately; the reconciler heals what no webhook announces — manual DB fixes, and a `cancelled` subscription whose `ends_at` passed without an `expired` event. Without it such changes apply only on restart. Leave empty to disable.
+
 ### `strict_access`
 
 | | |
@@ -237,8 +246,8 @@ Periodic sync interval for refreshing pricing and variant data from the provider
 
 Controls how LemonSqueezy subscription statuses are interpreted when deciding whether a user has access.
 
-- `false` (default, lenient): access is granted purely by status — `on_trial`, `active`, `past_due`, and `cancelled` all count as active.
-- `true` (strict): same as lenient, except `past_due` keeps access **only if the subscription has had a successful payment**. A paying customer whose renewal temporarily fails keeps access during the dunning grace period, while a trial abuser whose very first charge bounced (never reached `active`) is cut off immediately. `on_trial` / `active` / `cancelled` remain active (`cancelled` keeps its grace period until LemonSqueezy moves it to `expired`).
+- `false` (default, lenient): access is granted purely by status — `on_trial`, `active`, `past_due`, and `cancelled` all count as active (`cancelled` only until its `ends_at`).
+- `true` (strict): same as lenient, except `past_due` keeps access **only if the subscription has had a successful payment**. A paying customer whose renewal temporarily fails keeps access during the dunning grace period, while a trial abuser whose very first charge bounced (never reached `active`) is cut off immediately. `on_trial` / `active` / `cancelled` remain active (`cancelled` keeps its grace period until its `ends_at`, when LemonSqueezy moves it to `expired`; access ends at `ends_at` even if that event never arrives).
 
 "Has had a successful payment" is tracked internally: a subscription only reaches `active` after a charge succeeds, so the service records this the first time it sees `active` and never unsets it. Enabling strict mode re-evaluates existing users on the next startup / reconcile, and existing `past_due` subscriptions without a recorded payment lose access.
 

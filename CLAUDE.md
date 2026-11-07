@@ -161,6 +161,8 @@ auth:
 
 sync_period: ""              # Optional periodic pricing/variant data refresh (e.g. "15m", "1h30m")
 
+reconcile_period: ""         # Optional periodic rebuild of user->plan from the DB (e.g. "10m"); needed for ends_at expiry without restart
+
 strict_access: false         # Strict subscription-status interpretation (see Notes). false = lenient
 
 providers:
@@ -214,6 +216,8 @@ A refunded subscription is never active, whatever its provider status says.
 Active subscriptions (which statuses grant access) depend on `strict_access`:
 - `false` (default, lenient): `status IN ('on_trial', 'active', 'past_due', 'cancelled')`
 - `true` (strict): `on_trial`/`active`/`cancelled` active; `past_due` active **only if `has_successful_payment`**. Keeps the dunning grace for paying customers but cuts off trial abusers whose first charge bounced (they never reached `active`).
+
+In both modes `cancelled` is active only while `ends_at` is NULL or in the future — a safety net for a lost `subscription_expired`. Time passing fires no webhook, so the Casbin grouping is dropped by the reconciler (`reconcile_period`) or on restart. The unique one-live-subscription-per-user index cannot use the clock, so such a row still occupies the user's live slot until its status changes.
 
 `has_successful_payment` is a sticky boolean column set the first time a subscription is seen in status `active` (accumulated via `OR` in the upsert; backfilled to `TRUE` only for existing `active` rows). Internal only — not exposed via the API.
 

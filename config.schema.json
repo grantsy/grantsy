@@ -132,6 +132,11 @@
       "description": "Optional periodic sync interval in Go duration format (e.g. '15m', '1h30m'). If empty, data is only loaded at startup.",
       "default": ""
     },
+    "reconcile_period": {
+      "type": "string",
+      "description": "Optional periodic rebuild of user->plan assignments from the subscriptions table, in Go duration format (e.g. '10m'). Heals changes no webhook announces (manual DB fixes, a cancelled subscription whose ends_at passed). If empty, assignments are rebuilt only at startup.",
+      "default": ""
+    },
     "strict_access": {
       "type": "boolean",
       "description": "Strict subscription-status interpretation. false (default): lenient — on_trial/active/past_due/cancelled all grant access. true: strict — past_due keeps access only if the subscription has had a successful payment (paying customer in dunning stays; never-paid trial abuser is cut off).",
