@@ -2,6 +2,7 @@ package subscriptions_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -21,6 +22,14 @@ func TestSubscription_IsActive_OnTrial(t *testing.T) {
 func TestSubscription_IsActive_Cancelled(t *testing.T) {
 	sub := &subscriptions.Subscription{Status: "cancelled"}
 	assert.True(t, sub.IsActive(true))
+
+	future := time.Now().Add(time.Hour).Unix()
+	sub.EndsAt = &future
+	assert.True(t, sub.IsActive(true))
+
+	past := time.Now().Add(-time.Hour).Unix()
+	sub.EndsAt = &past
+	assert.False(t, sub.IsActive(true))
 }
 
 func TestSubscription_IsActive_Expired(t *testing.T) {
