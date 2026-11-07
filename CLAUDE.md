@@ -118,7 +118,7 @@ GET /v1/users/{user_id}?expand=plan,features,subscription
 ```
 POST /v1/webhook/lemonsqueezy
 ```
-Validates signature via SDK. Handles the subscription lifecycle events (`subscription_created`, `_updated`, `_cancelled`, `_resumed`, `_expired`, `_paused`, `_unpaused` — all upsert the subscription; `subscription_expired` is the only signal that a cancelled subscription's grace period ended, so the LemonSqueezy webhook must subscribe to it), plus `subscription_payment_refunded` and `order_refunded`. Refunds stamp `refunded_at`, which revokes access (Casbin grouping dropped, outgoing plan-update webhook fired); a refund matching no known subscription answers 500 so the provider retries.
+Validates signature via SDK. Handles the subscription lifecycle events (`subscription_created`, `_updated`, `_cancelled`, `_resumed`, `_expired`, `_paused`, `_unpaused` — all upsert the subscription; `subscription_expired` is the only signal that a cancelled subscription's grace period ended, so the LemonSqueezy webhook must subscribe to it), plus `subscription_payment_refunded` and `order_refunded`. Delivery is not ordered, so the upsert skips a snapshot whose `updated_at` is older than the stored row (answers 200, entitlements untouched; the sticky `has_successful_payment` is still recorded). Refunds stamp `refunded_at`, which revokes access (Casbin grouping dropped, outgoing plan-update webhook fired); a refund matching no known subscription answers 500 so the provider retries.
 
 ### Infrastructure (hidden from external)
 

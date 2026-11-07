@@ -9,6 +9,11 @@ import (
 	"github.com/grantsy/grantsy/internal/infra/db"
 )
 
+// ErrStaleUpdate is returned by UpsertSubscription when the stored row is newer
+// than the incoming one: the provider does not deliver webhooks in order, and an
+// older snapshot must not overwrite a newer status.
+var ErrStaleUpdate = errors.New("subscriptions: incoming subscription is older than the stored one")
+
 type Subscription struct {
 	ID                      int
 	UserID                  string
@@ -154,6 +159,7 @@ func (r *Repo) UpsertSubscription(
 			renewal_interval_unit = excluded.renewal_interval_unit,
 			renewal_interval_quantity = excluded.renewal_interval_quantity,
 			has_successful_payment = %[1]s.has_successful_payment OR excluded.has_successful_payment
+		WHERE excluded.updated_at >= %[1]s.updated_at
 		RETURNING has_successful_payment, refunded_at
 	`, table))
 
@@ -166,7 +172,11 @@ func (r *Repo) UpsertSubscription(
 	// a previously-active subscription still sees has_successful_payment = true.
 	// The same applies to refunded_at: without it a subscription_updated
 	// arriving after a refund would report IsActive and hand the plan back.
-	if err := r.db.QueryRowContext(
+	//
+	// The WHERE on the update skips an incoming snapshot older than the stored
+	// one (equal timestamps still apply: the provider sends several events for
+	// one change). A skipped update returns no row, see below.
+	err := r.db.QueryRowContext(
 		ctx,
 		query,
 		sub.ID,
@@ -194,10 +204,37 @@ func (r *Repo) UpsertSubscription(
 		sub.RenewalIntervalUnit,
 		sub.RenewalIntervalQuantity,
 		sub.Status == "active",
-	).Scan(&sub.HasSuccessfulPayment, &sub.RefundedAt); err != nil {
+	).Scan(&sub.HasSuccessfulPayment, &sub.RefundedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		// A stale snapshot still proves a past successful payment if it was
+		// "active": keep the sticky flag, which must not depend on delivery
+		// order (a past_due inserted before its older "active" would otherwise
+		// cut a paying customer off in strict mode).
+		if sub.Status == "active" {
+			if err := r.markHasSuccessfulPayment(ctx, sub.ID); err != nil {
+				return err
+			}
+		}
+		return ErrStaleUpdate
+	}
+	if err != nil {
 		return fmt.Errorf("billing: failed to upsert subscription: %w", err)
 	}
 
+	return nil
+}
+
+func (r *Repo) markHasSuccessfulPayment(ctx context.Context, id int) error {
+	table := r.db.TableName("subscriptions_lemonsqueezy")
+	query := r.db.Rebind(fmt.Sprintf(`
+		UPDATE %s SET has_successful_payment = TRUE WHERE id = $1
+	`, table))
+	if _, err := r.db.ExecContext(ctx, query, id); err != nil {
+		return fmt.Errorf(
+			"subscriptions: failed to mark successful payment: %w",
+			err,
+		)
+	}
 	return nil
 }
 
