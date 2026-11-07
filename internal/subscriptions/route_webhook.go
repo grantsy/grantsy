@@ -103,8 +103,18 @@ func (route *RouteWebhook) Handler() http.Handler {
 		}
 
 		switch eventName {
+		// Every event that carries the subscription object goes through the
+		// same upsert. subscription_updated is not a reliable catch-all: the
+		// time-driven cancelled -> expired transition (end of the grace
+		// period, or of dunning) arrives only as subscription_expired, and
+		// dropping it leaves the subscription granting access forever.
 		case lemonsqueezy.WebhookEventSubscriptionCreated,
-			lemonsqueezy.WebhookEventSubscriptionUpdated:
+			lemonsqueezy.WebhookEventSubscriptionUpdated,
+			lemonsqueezy.WebhookEventSubscriptionCancelled,
+			lemonsqueezy.WebhookEventSubscriptionResumed,
+			lemonsqueezy.WebhookEventSubscriptionExpired,
+			lemonsqueezy.WebhookEventSubscriptionPaused,
+			lemonsqueezy.WebhookEventSubscriptionUnpaused:
 			var request lemonsqueezy.WebhookRequestSubscription
 			if err := json.Unmarshal(payload, &request); err != nil {
 				log.Info("failed to unmarshal webhook payload", "error", err)
