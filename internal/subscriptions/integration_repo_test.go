@@ -185,6 +185,23 @@ func TestRepoIntegration(t *testing.T) {
 					assert.Equal(t, map[string]int{"user-1": 12345}, plans)
 				})
 
+				// A lost subscription_expired must not grant access forever.
+				t.Run("cancelled_with_past_ends_at_excluded", func(t *testing.T) {
+					for _, strict := range []bool{false, true} {
+						repo := drv.newDB(t, strict)
+						ctx := context.Background()
+
+						past := time.Now().Add(-time.Hour).Unix()
+						sub := testSub(1, "user-1", "cancelled")
+						sub.EndsAt = &past
+						require.NoError(t, repo.UpsertSubscription(ctx, sub))
+
+						plans, err := repo.GetActiveUserPlans(ctx)
+						require.NoError(t, err)
+						assert.Empty(t, plans, "strictAccess=%v", strict)
+					}
+				})
+
 				t.Run("expired_subscription_excluded", func(t *testing.T) {
 					repo := drv.newDB(t, true)
 					ctx := context.Background()
